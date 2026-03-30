@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Downloads Manager",
+  "short_name": "Downloads",
+  "version": "3.1.0",
+  "description": "Minimal liquid-glass downloads manager for Chromium — live speed/ETA, SVG file icons, bulk actions, side panel, full keyboard control.",
+  "minimum_chrome_version": "116",
+  "incognito": "split",
+  "permissions": [
+    "downloads",
+    "downloads.open",
+    "clipboardWrite",
+    "storage",
+    "sidePanel",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Downloads Manager"
+  },
+  "side_panel": {
+    "default_path": "downloads.html"
+  },
+  "options_page": "downloads.html",
+  "commands": {
+    "open-manager": {
+      "suggested_key": {
+        "default": "Alt+Shift+J",
+        "mac":     "MacCtrl+Shift+J"
+      },
+      "description": "Open Downloads Manager"
+    }
+  },
+  "icons": {
+    "16":  "icons/icon16.png",
+    "32":  "icons/icon32.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
