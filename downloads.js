@@ -265,6 +265,8 @@ const state = {
   renderScheduled: false,
   availableDateMin: null,
   availableDateMax: null,
+  extFilter:       'all',   // 'all' | lowercase ext e.g. 'pdf'
+  themeMode:       'auto',  // 'auto' | 'light' | 'dark'
 };
 
 const modalState   = { resolve: null, lastFocused: null };
@@ -755,6 +757,9 @@ function getFiltered() {
         .filter(Boolean).some(v => String(v).toLowerCase().includes(q))
     );
   }
+  if (state.extFilter && state.extFilter !== 'all') {
+    items = items.filter(d => getExtension(d).toLowerCase() === state.extFilter);
+  }
   return [...items].sort(SORT_FNS[state.sortBy] || SORT_FNS['date-desc']);
 }
 
@@ -823,6 +828,7 @@ function renderAll() {
   updateBulkBar(filtered);
   updateFooter(filtered, rendered);
   setEmpty(filtered);
+  buildExtChips();
   startPollIfNeeded();
 
   const list = $('#downloads-list');
@@ -1631,6 +1637,144 @@ function bindChrome() {
   });
 }
 
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Theme management
+   ───────────────────────────────────────────────────────────────────────── */
+const THEME_CYCLE  = ['auto', 'light', 'dark'];
+const THEME_LABELS = { auto: 'Mode: Automatic', light: 'Mode: Light', dark: 'Mode: Dark' };
+
+function applyTheme(mode) {
+  state.themeMode = mode;
+  const root = document.documentElement;
+  root.removeAttribute('data-theme');
+  if (mode === 'light') root.setAttribute('data-theme', 'light');
+  if (mode === 'dark')  root.setAttribute('data-theme', 'dark');
+
+  const btn   = $('#btn-theme');
+  const label = $('#theme-btn-label');
+  if (btn) {
+    btn.dataset.themeMode = mode;
+  }
+  if (label) label.textContent = THEME_LABELS[mode];
+  invoke(chrome.storage.local, 'set', { dlMgrTheme: mode }).catch(() => {});
+}
+
+function cycleTheme() {
+  const idx = THEME_CYCLE.indexOf(state.themeMode);
+  applyTheme(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
+}
+
+async function restoreTheme() {
+  try {
+    const r = await invoke(chrome.storage.local, 'get', { dlMgrTheme: 'auto' });
+    applyTheme(r?.dlMgrTheme || 'auto');
+  } catch { applyTheme('auto'); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Extension filter
+   ───────────────────────────────────────────────────────────────────────── */
+/** Category colour map matching ICON_DEFS */
+const EXT_COLORS = {
+  image:'#a78bfa', video:'#f87171', audio:'#34d399', pdf:'#f87171',
+  doc:'#60a5fa',   sheet:'#4ade80', slide:'#fb923c', archive:'#fbbf24',
+  code:'#22d3ee',  exe:'#94a3b8',   font:'#c084fc',  disk:'#f472b6',
+  torrent:'#38bdf8', generic:'#64748b',
+};
+function getExtColor(ext) {
+  const cat = EXT_MAP[ext.toLowerCase()] || 'generic';
+  return EXT_COLORS[cat] || EXT_COLORS.generic;
+}
+
+/** Sorted list of {ext, count} present in current downloads */
+function getAvailableExtensions() {
+  const counts = new Map();
+  for (const d of state.downloads) {
+    const ext = getExtension(d).toLowerCase();
+    if (!ext) continue;
+    counts.set(ext, (counts.get(ext) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([ext, count]) => ({ ext, count }));
+}
+
+function buildExtChips() {
+  const chipList = $('#ext-chip-list');
+  const popover  = $('#ext-popover');
+  const btn      = $('#btn-ext-filter');
+  const clearBtn = $('#btn-clear-ext');
+  const lbl      = $('#ext-filter-label');
+  if (!chipList) return;
+
+  const exts = getAvailableExtensions();
+
+  // Show/hide popover btn if no exts
+  if (btn) btn.classList.toggle('hidden', !exts.length);
+
+  chipList.innerHTML = '';
+  for (const { ext, count } of exts) {
+    const chip = document.createElement('button');
+    chip.type      = 'button';
+    chip.className = 'ext-chip' + (state.extFilter === ext ? ' active' : '');
+    chip.dataset.ext = ext;
+    chip.setAttribute('aria-pressed', String(state.extFilter === ext));
+    chip.title = `${count} file${count !== 1 ? 's' : ''}`;
+
+    const dot = document.createElement('span');
+    dot.className = 'ext-chip-dot';
+    dot.style.background = getExtColor(ext);
+
+    const lbEl = document.createElement('span');
+    lbEl.textContent = ext.toUpperCase();
+
+    const ctEl = document.createElement('span');
+    ctEl.className = 'ext-chip-count';
+    ctEl.textContent = count;
+
+    chip.append(dot, lbEl, ctEl);
+    chip.addEventListener('click', () => {
+      applyExtFilter(ext === state.extFilter ? 'all' : ext);
+      closeExtPopover();
+    });
+    attachRipple(chip);
+    chipList.appendChild(chip);
+  }
+
+  const isFiltered = state.extFilter !== 'all';
+  if (clearBtn) clearBtn.classList.toggle('hidden', !isFiltered);
+  if (btn)      btn.classList.toggle('is-active', isFiltered);
+  if (lbl)      lbl.textContent = isFiltered ? state.extFilter.toUpperCase() : 'All types';
+
+  // Update visible count bar accent
+  const vcBar = $('#visible-count-bar');
+  if (vcBar) vcBar.classList.toggle('filtered', isFiltered || state.dateFilterMode !== 'all');
+}
+
+function applyExtFilter(ext) {
+  state.extFilter = ext || 'all';
+  resetRenderCount(); pruneSelection(); scheduleRender();
+}
+
+function openExtPopover() {
+  const p = $('#ext-popover');
+  const b = $('#btn-ext-filter');
+  if (p) p.classList.remove('hidden');
+  if (b) b.setAttribute('aria-expanded', 'true');
+}
+function closeExtPopover() {
+  const p = $('#ext-popover');
+  const b = $('#btn-ext-filter');
+  if (p) p.classList.add('hidden');
+  if (b) b.setAttribute('aria-expanded', 'false');
+}
+function toggleExtPopover() {
+  const p = $('#ext-popover');
+  if (!p) return;
+  p.classList.contains('hidden') ? openExtPopover() : closeExtPopover();
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    UI wiring
    ───────────────────────────────────────────────────────────────────────── */
@@ -1720,6 +1864,13 @@ function wire() {
     if (!dateFilterWrap || !dateFilterWrap.contains(e.target)) closeDatePopover();
   });
 
+  // Theme
+  $('#btn-theme')?.addEventListener('click', cycleTheme);
+  // Ext filter trigger
+  $('#btn-ext-filter')?.addEventListener('click', e => { e.stopPropagation(); toggleExtPopover(); });
+  // Ext clear
+  $('#btn-clear-ext')?.addEventListener('click', () => { applyExtFilter('all'); });
+  // Close ext popover on outside click (added to existing click handler below)
   $('#btn-refresh').addEventListener('click', refresh);
   $('#btn-load-more').addEventListener('click', () => {
     state.renderCount += RENDER_INCREMENT;
@@ -1772,6 +1923,11 @@ function wire() {
 
   document.addEventListener('click', e => {
     if (!e.target.closest('#context-menu') && !e.target.closest('.btn-more')) hideCtx();
+    if (!e.target.closest('#ext-filter-wrap')) closeExtPopover();
+    if (!e.target.closest('#date-filter-wrap')) {
+      $('#date-popover')?.classList.add('hidden');
+      $('#btn-date-filter')?.setAttribute('aria-expanded','false');
+    }
   });
 
   document.addEventListener('keydown', e => {
@@ -1822,7 +1978,7 @@ function maybeLoadMore() {
 /* ─────────────────────────────────────────────────────────────────────────
    State change helpers
    ───────────────────────────────────────────────────────────────────────── */
-function applyFilter(f) { state.filterStatus = f; resetRenderCount(); pruneSelection(); persistPrefs(); scheduleRender(); }
+function applyFilter(f) { state.filterStatus = f; state.extFilter = 'all'; resetRenderCount(); pruneSelection(); persistPrefs(); scheduleRender(); }
 function applySort(s)   { state.sortBy = s;        resetRenderCount(); persistPrefs(); scheduleRender(); }
 function applySearch(v) { state.searchQuery = v.trim(); resetRenderCount(); pruneSelection(); scheduleRender(); }
 
@@ -1849,6 +2005,7 @@ async function init() {
   if (missingRoots.length) {
     throw new Error(`Missing required UI nodes: ${missingRoots.join(', ')}`);
   }
+  await restoreTheme();
   await restorePrefs();
   syncControls();
   await loadDownloads();

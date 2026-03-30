@@ -107,6 +107,22 @@
           </svg>
           Open full page
         </button>
+        <button id="btn-theme" class="glass-btn sidebar-action theme-sidebar-btn" type="button"
+          data-theme-mode="auto">
+          <!-- auto -->
+          <svg class="theme-svg theme-svg-auto" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+          <!-- light -->
+          <svg class="theme-svg theme-svg-light" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- dark -->
+          <svg class="theme-svg theme-svg-dark" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <span id="theme-btn-label">Mode: Automatic</span>
+        </button>
         <button id="btn-clear-all" class="glass-btn sidebar-action sidebar-danger" type="button">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="3 6 5 6 21 6"/>
@@ -223,6 +239,31 @@
               </div>
               <p id="date-range-hint" class="date-range-hint" aria-live="polite">Available range: —</p>
               <button id="btn-apply-range" class="glass-btn apply-range-btn" type="button">Apply range</button>
+            </div>
+          </div>
+
+          <!-- Separator -->
+          <span class="status-sep" aria-hidden="true"></span>
+
+          <!-- Extension type filter -->
+          <div class="ext-filter-group" id="ext-filter-wrap">
+            <button id="btn-ext-filter" class="glass-btn ext-filter-btn" type="button"
+              aria-haspopup="true" aria-expanded="false">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              <span id="ext-filter-label">All types</span>
+              <svg class="ext-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            <button id="btn-clear-ext" class="clear-date-btn hidden" type="button" aria-label="Clear type filter">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+            <!-- Ext popover — chips injected by JS -->
+            <div id="ext-popover" class="ext-popover hidden" role="dialog" aria-label="Filter by file type">
+              <div class="ext-popover-header">File type</div>
+              <div id="ext-chip-list" class="ext-chip-list"></div>
             </div>
           </div>
 
