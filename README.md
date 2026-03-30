@@ -1,106 +1,211 @@
-# Downloads Manager — v3.1.0
+# Downloads Manager
 
-A minimal, liquid-glass downloads manager for Chromium browsers. Runs as a **Side Panel**, full-page **tab**, or **options page**.
+> A modern downloads manager for Chromium with live progress tracking, smart filters, theme support, side panel access, and keyboard shortcuts.
 
----
-
-## Design system — Deep Glass
-
-| Token | Value | Purpose |
-|---|---|---|
-| Background | `#07080e` | Near-black canvas |
-| Glass surface | `rgba(255,255,255,0.042)` | Card/panel fill |
-| Glass border | `rgba(255,255,255,0.07)` | Subtle edge |
-| Top-edge highlight | `rgba(255,255,255,0.12)` | Inset box-shadow — the "glass catches light" effect |
-| Accent | `#4a9eff` | Electric blue, used sparingly |
-| Font (display) | **Sora** (Google Fonts) | Clean, geometric, distinctive |
-| Font (mono) | **JetBrains Mono** | Filenames, paths, sizes |
-
-**Microinteractions implemented:**
-- Button **ripple** — expanding circle on every click
-- Card **lift** — `translateY(-1px)` + shadow increase on hover
-- Card **entrance** — `cardIn` stagger animation (8 child delay steps)
-- Progress bar **shimmer** — sliding highlight overlay on active bars
-- Badge **pop** — `scale(1.3)` spring when count value changes
-- Toast **spring-in** — 3-keyframe bounce from right
-- Toast **slide-out** — `slideRightOut` on remove
-- Modal **scale-in** — `fadeScaleIn` with spring easing
-- Context menu **scale-in** — `fadeScaleIn` from transform-origin
-- Search focus **glow ring** — `0 0 0 3px var(--accent-glow)` on focus-within
-- Active download **pulse dot** — CSS keyframe on badge dot
-- Refresh icon **spin** — `spinRefresh` when `aria-busy="true"`
+![Version](https://img.shields.io/badge/version-3.1.0-4a9eff?style=flat-square)
+![Manifest](https://img.shields.io/badge/manifest-v3-7c5cfc?style=flat-square)
+![Chrome](https://img.shields.io/badge/chrome-116%2B-34d399?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-fbbf24?style=flat-square)
 
 ---
 
-## File icon registry
+## Overview
 
-No emojis. Every file type renders as a proper **SVG document badge**:
-- A coloured header band (category colour, 14px tall)
-- A category-specific SVG icon path
-- A 3-5 char extension label
-- Colour is derived from the file category, set as a CSS custom property `--fi-color`
+Downloads Manager is a Manifest V3 Chromium extension that provides a cleaner alternative to the default browser downloads page. It supports live progress monitoring, status and date filtering, extension-based categorization, bulk actions, and multiple display modes.
 
-**Categories and accent colours:**
+The extension can open in:
 
-| Category | Colour | Extensions (sample) |
-|---|---|---|
-| Image | `#a78bfa` (violet) | png jpg jpeg gif webp svg avif heic |
-| Video | `#f87171` (red) | mp4 mov mkv webm avi m4v |
-| Audio | `#34d399` (green) | mp3 wav flac aac ogg m4a |
-| PDF   | `#f87171` (red) | pdf |
-| Document | `#60a5fa` (blue) | doc docx txt md rtf pages |
-| Spreadsheet | `#4ade80` (green) | xls xlsx csv ods numbers |
-| Presentation | `#fb923c` (orange) | ppt pptx key odp |
-| Archive | `#fbbf24` (amber) | zip rar 7z tar gz bz2 |
-| Code | `#22d3ee` (cyan) | js ts py rb go rs html css json |
-| Executable | `#94a3b8` (slate) | exe msi apk deb pkg appimage |
-| Font | `#c084fc` (purple) | ttf otf woff woff2 |
-| Disk image | `#f472b6` (pink) | dmg iso img vhd |
-| Torrent | `#38bdf8` (sky) | torrent |
-| Generic | `#64748b` (gray) | anything else |
+- the **Chrome Side Panel**
+- a dedicated **full-page tab**
+- the extension **options page**
 
-MIME-type fallback is also implemented for cases where the extension is missing.
+It is designed to remain lightweight, with bundled assets and no external runtime dependencies.
 
 ---
 
-## Files
+## Features
 
-| File | Purpose |
+### Download management
+
+- Live download progress, speed, and ETA
+- Active download count shown on the toolbar badge
+- Pause, resume, cancel, open, reveal, and retry actions
+- Automatic updates while downloads are in progress
+
+### Filtering and sorting
+
+- Filter by status: **All**, **Complete**, **In Progress**, **Failed**, **Missing**
+- Filter by date: **Today**, **Yesterday**, **This week**, **This month**, or custom range
+- Filter by file extension using dynamically generated type chips
+- Search across filename, source URL, final URL, full path, and directory
+- Sort by date, name, or size in ascending or descending order
+
+### Bulk actions
+
+- Multi-select download items
+- Delete files from disk and remove their history records
+- Remove history records without deleting local files
+- Sticky bulk-action bar for long lists
+
+### Appearance and usability
+
+- **Light**, **Dark**, and **Auto** theme modes
+- Theme preference stored locally
+- Side panel workflow with full-page fallback
+- Keyboard shortcut support
+- File-type specific SVG icons for quick recognition
+
+---
+
+## Theme Support
+
+The extension supports three theme modes:
+
+- **Auto**: follows the system color scheme
+- **Light**: always uses the light palette
+- **Dark**: always uses the dark palette
+
+Theme preference is stored locally and restored on startup.
+
+---
+
+## File Type Categories
+
+The UI groups files by extension and renders category-specific SVG icons.
+
+Supported categories include:
+
+- images
+- video
+- audio
+- PDF
+- documents
+- spreadsheets
+- presentations
+- archives
+- code files
+- executables
+- fonts
+- disk images
+- torrents
+- generic fallback
+
+When an extension is unavailable, MIME type inference is used as a fallback.
+
+---
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
 |---|---|
-| `manifest.json` | MV3 manifest |
-| `background.js` | Service worker — badge, context menu, panel/tab routing |
-| `downloads.html` | App shell — Sora + JetBrains Mono fonts, semantic HTML |
-| `downloads.css` | Deep Glass design system, microinteraction keyframes |
-| `downloads.js` | State, SVG icon registry, speed/ETA, rendering, all operations |
-| `icons/` | Toolbar icons |
+| `Alt` + `Shift` + `J` | Open Downloads Manager on Windows / Linux |
+| `Ctrl` + `Shift` + `J` | Open Downloads Manager on macOS |
+| `Ctrl` / `⌘` + `F` | Focus search |
+| `Ctrl` / `⌘` + `A` | Select all visible items |
+| `F5` | Refresh the list |
+| `Delete` | Delete selected items |
+| `Alt` + `S` | Toggle sidebar |
+| `Escape` | Close the active UI layer |
+
+Chrome-managed shortcuts can be customized at `chrome://extensions/shortcuts`.
 
 ---
 
-## Install
+## Installation
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** → select this folder.
-3. Use **Alt+Shift+J** (Win/Linux) or **Ctrl+Shift+J** (Mac) to open.
+### Load unpacked in Chromium-based browsers
+
+1. Clone or download this repository.
+2. Open `chrome://extensions`.
+3. Enable **Developer mode**.
+4. Click **Load unpacked**.
+5. Select the project folder.
+
+After installation:
+
+- click the extension action to open the manager
+- use the context menu entry from the action button
+- or launch it with the configured keyboard shortcut
 
 ---
 
-## Keyboard shortcuts
+## Permissions
 
-| Key | Action |
+| Permission | Purpose |
 |---|---|
-| `Ctrl/⌘ + F` | Focus search |
-| `F5` | Refresh list |
-| `Ctrl/⌘ + A` | Select all visible |
-| `Delete` | Bulk delete selected |
-| `Alt + S` | Toggle sidebar |
-| `Escape` | Close modal → menu → selection → mobile sidebar |
-| `Alt+Shift+J` | Open manager |
+| `downloads` | Read and manage download items |
+| `downloads.open` | Open completed downloads |
+| `clipboardWrite` | Copy file paths, names, or URLs |
+| `storage` | Persist theme and UI preferences |
+| `sidePanel` | Render the extension in the Chrome Side Panel |
+| `contextMenus` | Add action menu entry for opening the manager |
+
+The extension does not request host permissions.
+
+---
+
+## Browser Compatibility
+
+| Browser | Support |
+|---|---|
+| Chrome 116+ | Full support |
+| Edge 116+ | Full support |
+| Brave | Full support on compatible Chromium versions |
+| Chromium builds without Side Panel support | Tab fallback |
+| Firefox | Not supported |
+
+---
+
+## Project Structure
+
+```text
+downloads-manager/
+├── manifest.json
+├── background.js
+├── downloads.html
+├── downloads.css
+├── downloads.js
+├── fonts/
+└── icons/
+```
+
+### File reference
+
+- `manifest.json` — extension manifest and permissions
+- `background.js` — service worker for badge updates, action routing, and side panel behavior
+- `downloads.html` — main application shell
+- `downloads.css` — UI styling and theme tokens
+- `downloads.js` — state management, rendering, filtering, actions, and keyboard behavior
+
+---
+
+## Development
+
+No build step is required.
+
+```bash
+https://github.com/igniyel/downloads-manager.git
+cd downloads-manager
+```
+
+To test locally:
+
+1. Open `chrome://extensions`
+2. Load the folder as an unpacked extension
+3. Make code changes
+4. Reload the extension from the extensions page
 
 ---
 
 ## Notes
 
-- `chrome.downloads.removeFile()` only works for completed downloads.
-- `chrome.downloads.show()` is called as a void/fire-and-forget to avoid stalls on some Chromium forks.
-- Speed is calculated over a 5-second sliding window; requires at least 2 data points 250 ms apart.
-- The native `chrome://downloads` page is not overridden.
+- The extension is built with Manifest V3.
+- The minimum Chrome version is **116**.
+- Assets such as fonts and icons are bundled locally.
+- The interface is optimized for download-heavy workflows and quick inspection.
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE) for details.
