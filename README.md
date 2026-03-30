@@ -208,4 +208,4 @@ To test locally:
 
 ## License
 
-MIT. See [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE.md) for details.
