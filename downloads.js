@@ -342,8 +342,30 @@ function shiftDay(date, days) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
+/**
+ * Best-known file size — used for sort ordering only.
+ * Prefers the authoritative fields (fileSize / totalBytes) over
+ * bytesReceived, and guards against the Chrome API's -1 sentinel.
+ */
 function getSize(item) {
-  return Math.max(item.fileSize || 0, item.totalBytes || 0, item.bytesReceived || 0);
+  const known = Math.max(
+    item.fileSize   > 0 ? item.fileSize   : 0,
+    item.totalBytes > 0 ? item.totalBytes : 0,
+  );
+  if (known > 0) return known;
+  // For completed items with no reported total, fall back to bytesReceived.
+  return item.state !== 'in_progress' && item.bytesReceived > 0 ? item.bytesReceived : 0;
+}
+
+/**
+ * Size that is actually on disk: only completed, existing files.
+ * Used for the "On disk" sidebar stat.
+ */
+function getCompletedSize(item) {
+  return Math.max(
+    item.fileSize   > 0 ? item.fileSize   : 0,
+    item.totalBytes > 0 ? item.totalBytes : 0,
+  );
 }
 
 function getFilename(item) {
@@ -384,6 +406,23 @@ function formatSize(bytes) {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   const idx   = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${idx === 0 ? (bytes / Math.pow(1024, idx)) : (bytes / Math.pow(1024, idx)).toFixed(1)} ${units[idx]}`;
+}
+
+/**
+ * Returns the size string to display on a card.
+ * - In progress with known total : "10.59 MB / 5.43 GB"
+ * - In progress, total unknown   : "10.59 MB"
+ * - Complete / other             : "5.43 GB"
+ */
+function formatSizeInline(item) {
+  if (item.state === 'in_progress') {
+    const recv  = item.bytesReceived > 0 ? item.bytesReceived : 0;
+    const total = item.totalBytes    > 0 ? item.totalBytes    : 0;
+    if (total > 0) return `${formatSize(recv)} / ${formatSize(total)}`;
+    return recv > 0 ? formatSize(recv) : '—';
+  }
+  const size = getCompletedSize(item) || getSize(item);
+  return size > 0 ? formatSize(size) : '—';
 }
 
 function formatRelDate(value) {
@@ -621,6 +660,10 @@ function patchActiveCard(item) {
   if (!card) return false;
 
   const status = getStatusInfo(item);
+
+  /* — Size text (received / total while downloading, final size on complete) — */
+  const sizeEl = card.querySelector('.size-text');
+  if (sizeEl) sizeEl.textContent = formatSizeInline(item);
 
   /* — Progress bar — */
   const progWrap = card.querySelector('.progress-wrap');
@@ -869,12 +912,16 @@ function updateCounts(filtered) {
   setText('#selected-total', state.selected.size);
   setText('#active-count', c.active || '—');
 
-  // Total size: use selected subset when any items are selected, else all visible
-  const sizeSource = state.selected.size > 0
-    ? filtered.filter(d => state.selected.has(d.id))
-    : filtered;
-  const total = sizeSource.reduce((s, d) => s + getSize(d), 0);
-  setText('#total-size', total > 0 ? formatSize(total) : '—');
+  // "On disk" — completed files + bytes already written for active downloads.
+  // When items are selected, restrict to that subset.
+  const diskSource = state.selected.size > 0
+    ? filtered.filter(d => state.selected.has(d.id) && (d.state === 'complete' && d.exists !== false || d.state === 'in_progress'))
+    : filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
+  const diskTotal = diskSource.reduce((s, d) => {
+    if (d.state === 'in_progress') return s + (d.bytesReceived > 0 ? d.bytesReceived : 0);
+    return s + getCompletedSize(d);
+  }, 0);
+  setText('#total-size', diskTotal > 0 ? formatSize(diskTotal) : '—');
 }
 
 /**
@@ -902,11 +949,15 @@ function updateSidebarStats() {
   setText('#selected-total', state.selected.size);
   setText('#active-count', c.active || '—');
 
-  const sizeSource = state.selected.size > 0
-    ? filtered.filter(d => state.selected.has(d.id))
-    : filtered;
-  const total = sizeSource.reduce((s, d) => s + getSize(d), 0);
-  setText('#total-size', total > 0 ? formatSize(total) : '—');
+  // "On disk" — completed files + bytes already written for active downloads.
+  const diskSource = state.selected.size > 0
+    ? filtered.filter(d => state.selected.has(d.id) && (d.state === 'complete' && d.exists !== false || d.state === 'in_progress'))
+    : filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
+  const diskTotal = diskSource.reduce((s, d) => {
+    if (d.state === 'in_progress') return s + (d.bytesReceived > 0 ? d.bytesReceived : 0);
+    return s + getCompletedSize(d);
+  }, 0);
+  setText('#total-size', diskTotal > 0 ? formatSize(diskTotal) : '—');
 }
 
 function updateCount(sel, next, prev) {
@@ -1036,16 +1087,16 @@ function buildCard(item) {
   /* Meta row */
   const meta = el('div', { class:'file-meta' });
 
-  const addMeta = (text, title) => {
-    const s = el('span', { class:'meta-text' }); s.textContent = text;
+  const addMeta = (text, cls, title) => {
+    const s = el('span', { class: cls ? `meta-text ${cls}` : 'meta-text' }); s.textContent = text;
     if (title) s.title = title;
     meta.appendChild(s);
   };
   const dot = () => meta.appendChild(el('span', { class:'meta-dot' }));
 
-  addMeta(formatSize(getSize(item)));
+  addMeta(formatSizeInline(item), 'size-text');
   dot();
-  addMeta(formatRelDate(item.startTime), formatFullDate(item.startTime));
+  addMeta(formatRelDate(item.startTime), null, formatFullDate(item.startTime));
   dot();
 
   /* Status badge */

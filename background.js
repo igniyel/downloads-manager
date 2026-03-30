@@ -54,6 +54,11 @@ chrome.runtime.onStartup?.addListener(() => {
   initialize().catch(e => console.warn('[Downloads Manager] onStartup:', e));
 });
 
+// Resolves once the current SW execution context has finished its initialize()
+// call. Message handlers await this before doing real work so that a message
+// arriving during a cold wake doesn't race against setup.
+const swReady = initialize().catch(e => console.warn('[Downloads Manager] wake-init:', e));
+
 /* Live badge updates */
 chrome.downloads.onCreated.addListener(updateBadge);
 chrome.downloads.onChanged.addListener(updateBadge);
@@ -82,6 +87,10 @@ chrome.commands?.onCommand?.addListener(async command => {
 /* Message router */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
+    // Wait for the SW to finish its wake-up initialization before handling
+    // messages. This prevents a race where a message from downloads.html
+    // arrives while the SW is still cold-starting.
+    await swReady;
     switch (message?.type) {
       case 'downloads-manager:open-tab': {
         const tab = await chrome.tabs.create({ url: chrome.runtime.getURL(APP_PAGE) });
