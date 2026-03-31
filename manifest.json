@@ -3,7 +3,7 @@
   "name": "Downloads Manager",
   "short_name": "Downloads",
   "version": "3.1.0",
-  "description": "Minimal liquid-glass based modern downloads manager for chromium browsers. ",
+  "description": "Minimal liquid-glass based modern downloads manager for chromium browsers.",
   "minimum_chrome_version": "116",
   "incognito": "split",
   "permissions": [

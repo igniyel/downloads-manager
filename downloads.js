@@ -266,7 +266,7 @@ const state = {
   availableDateMin: null,
   availableDateMax: null,
   extFilter:       'all',   // 'all' | lowercase ext e.g. 'pdf'
-  themeMode:       'auto',  // 'auto' | 'light' | 'dark'
+  themeMode:       'auto',  // 'auto' | 'light' | 'dark' | 'midnight'
 };
 
 const modalState   = { resolve: null, lastFocused: null };
@@ -1690,37 +1690,57 @@ function bindChrome() {
 
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Theme management
+   Theme management — four modes
    ───────────────────────────────────────────────────────────────────────── */
-const THEME_CYCLE  = ['auto', 'light', 'dark'];
-const THEME_LABELS = { auto: 'Mode: Automatic', light: 'Mode: Light', dark: 'Mode: Dark' };
+const THEME_MODES  = ['auto', 'light', 'dark', 'midnight'];
+const THEME_LABELS = {
+  auto:     'Automatic',
+  light:    'Beige',
+  dark:     'Dark',
+  midnight: 'Midnight',
+};
+/* color-scheme hint for each mode (affects browser chrome: scrollbars, inputs) */
+const THEME_COLOR_SCHEME = {
+  auto:     'light',
+  light:    'light',
+  dark:     'dark',
+  midnight: 'dark',
+};
 
 function applyTheme(mode) {
+  if (!THEME_MODES.includes(mode)) mode = 'auto';
   state.themeMode = mode;
-  const root = document.documentElement;
-  root.removeAttribute('data-theme');
-  if (mode === 'light') root.setAttribute('data-theme', 'light');
-  if (mode === 'dark')  root.setAttribute('data-theme', 'dark');
 
-  const btn   = $('#btn-theme');
-  const label = $('#theme-btn-label');
-  if (btn) {
-    btn.dataset.themeMode = mode;
-  }
-  if (label) label.textContent = THEME_LABELS[mode];
+  /* Set data-theme on <html> */
+  document.documentElement.setAttribute('data-theme', mode);
+
+  /* Update color-scheme meta so browser native widgets match */
+  const metaCS = document.querySelector('meta[name="color-scheme"]');
+  if (metaCS) metaCS.content = THEME_COLOR_SCHEME[mode] || 'light';
+
+  /* Update theme picker segmented control */
+  $$('[data-theme-option]').forEach(btn => {
+    const active = btn.dataset.themeOption === mode;
+    btn.setAttribute('aria-pressed', String(active));
+    btn.classList.toggle('active', active);
+  });
+
+  /* Update the label text */
+  const labelEl = $('#theme-label-text');
+  if (labelEl) labelEl.textContent = THEME_LABELS[mode] || mode;
+
+  /* Persist */
   invoke(chrome.storage.local, 'set', { dlMgrTheme: mode }).catch(() => {});
-}
-
-function cycleTheme() {
-  const idx = THEME_CYCLE.indexOf(state.themeMode);
-  applyTheme(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
 }
 
 async function restoreTheme() {
   try {
     const r = await invoke(chrome.storage.local, 'get', { dlMgrTheme: 'auto' });
-    applyTheme(r?.dlMgrTheme || 'auto');
-  } catch { applyTheme('auto'); }
+    const saved = r?.dlMgrTheme;
+    applyTheme(THEME_MODES.includes(saved) ? saved : 'auto');
+  } catch {
+    applyTheme('auto');
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1915,8 +1935,10 @@ function wire() {
     if (!dateFilterWrap || !dateFilterWrap.contains(e.target)) closeDatePopover();
   });
 
-  // Theme
-  $('#btn-theme')?.addEventListener('click', cycleTheme);
+  // Theme picker — 4-button segmented control
+  $$('[data-theme-option]').forEach(btn => {
+    btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
+  });
   // Ext filter trigger
   $('#btn-ext-filter')?.addEventListener('click', e => { e.stopPropagation(); toggleExtPopover(); });
   // Ext clear
@@ -1951,7 +1973,53 @@ function wire() {
     searchInput.focus();
   });
 
-  $('#sort-select').addEventListener('change', e => applySort(e.target.value));
+  // ── Sort popover ─────────────────────────────────────────
+  const sortWrap    = $('#sort-filter-wrap');
+  const sortPopover = $('#sort-popover');
+  const btnSort     = $('#btn-sort');
+
+  const SORT_NAMES = {
+    'date-desc': 'Newest first',
+    'date-asc':  'Oldest first',
+    'name-asc':  'Name A → Z',
+    'name-desc': 'Name Z → A',
+    'size-desc': 'Largest first',
+    'size-asc':  'Smallest first',
+  };
+
+  function openSortPopover() {
+    if (!sortPopover) return;
+    sortPopover.classList.remove('hidden');
+    btnSort?.setAttribute('aria-expanded', 'true');
+  }
+  function closeSortPopover() {
+    if (!sortPopover) return;
+    sortPopover.classList.add('hidden');
+    btnSort?.setAttribute('aria-expanded', 'false');
+  }
+  function toggleSortPopover() {
+    sortPopover?.classList.contains('hidden') ? openSortPopover() : closeSortPopover();
+  }
+  function syncSortPopover(sortKey) {
+    const lbl = $('#sort-label');
+    if (lbl) lbl.textContent = SORT_NAMES[sortKey] || sortKey;
+    $$('.sort-opt', sortPopover).forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.sort === sortKey);
+    });
+  }
+
+  btnSort?.addEventListener('click', e => { e.stopPropagation(); toggleSortPopover(); });
+
+  $$('.sort-opt', sortPopover).forEach(opt => {
+    opt.addEventListener('click', () => {
+      const key = opt.dataset.sort;
+      if (key) { applySort(key); syncSortPopover(key); }
+      closeSortPopover();
+    });
+  });
+
+  // Expose syncSortPopover so syncControls can call it
+  window._syncSortPopover = syncSortPopover;
 
   $$('.filter-tab').forEach(btn => btn.addEventListener('click', () => {
     $$('.filter-tab').forEach(b => {
@@ -1975,6 +2043,7 @@ function wire() {
   document.addEventListener('click', e => {
     if (!e.target.closest('#context-menu') && !e.target.closest('.btn-more')) hideCtx();
     if (!e.target.closest('#ext-filter-wrap')) closeExtPopover();
+    if (!e.target.closest('#sort-filter-wrap')) closeSortPopover();
     if (!e.target.closest('#date-filter-wrap')) {
       $('#date-popover')?.classList.add('hidden');
       $('#btn-date-filter')?.setAttribute('aria-expanded','false');
@@ -1989,6 +2058,7 @@ function wire() {
     if (e.key === 'Escape') {
       if (modalOpen) { closeModal(false); return; }
       if (!$('#context-menu').classList.contains('hidden')) { hideCtx(); return; }
+      if (!$('#sort-popover')?.classList.contains('hidden')) { closeSortPopover(); return; }
       if (state.selected.size > 0) { clearSel(); return; }
       if ($('#app').classList.contains('sidebar-open')) { closeMobileSidebar(); return; }
       return;
@@ -2034,8 +2104,8 @@ function applySort(s)   { state.sortBy = s;        resetRenderCount(); persistPr
 function applySearch(v) { state.searchQuery = v.trim(); resetRenderCount(); pruneSelection(); scheduleRender(); }
 
 function syncControls() {
-  const sortSelect = $('#sort-select');
-  if (sortSelect) sortSelect.value = state.sortBy;
+  // Sync sort popover label + active state
+  if (window._syncSortPopover) window._syncSortPopover(state.sortBy);
   $$('.filter-tab').forEach(btn => {
     const a = btn.dataset.filter === state.filterStatus;
     btn.classList.toggle('active', a);
