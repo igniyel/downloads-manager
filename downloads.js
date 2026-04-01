@@ -19,25 +19,37 @@ const SORT_FNS = {
 };
 
 const DATE_GROUPS = [
-  { label: 'Today',      test: (day, today) => day >= today },
-  { label: 'Yesterday',  test: (day, today) => day >= shiftDay(today, -1) },
-  { label: 'This week',  test: (day, today) => day >= shiftDay(today, -6) },
-  { label: 'This month', test: (day, today) => day >= new Date(today.getFullYear(), today.getMonth(), 1) },
+  { label: msg('group_today'),      test: (day, today) => day >= today },
+  { label: msg('group_yesterday'),  test: (day, today) => day >= shiftDay(today, -1) },
+  { label: msg('group_this_week'),  test: (day, today) => day >= shiftDay(today, -6) },
+  { label: msg('group_this_month'), test: (day, today) => day >= new Date(today.getFullYear(), today.getMonth(), 1) },
 ];
 
 const INTERRUPT_LABELS = {
-  FILE_NO_SPACE:        'No disk space',
-  FILE_FAILED:          'Write failed',
-  FILE_NAME_TOO_LONG:   'Filename too long',
-  NETWORK_FAILED:       'Network error',
-  NETWORK_TIMEOUT:      'Timed out',
-  NETWORK_DISCONNECTED: 'Disconnected',
-  SERVER_BAD_CONTENT:   'Bad response',
-  SERVER_UNAUTHORIZED:  'Unauthorized',
-  SERVER_FORBIDDEN:     'Forbidden',
-  USER_CANCELED:        'Cancelled',
-  CRASH:                'Browser crash',
+  FILE_NO_SPACE:        msg('interrupt_no_space'),
+  FILE_FAILED:          msg('interrupt_write_failed'),
+  FILE_NAME_TOO_LONG:   msg('interrupt_name_too_long'),
+  NETWORK_FAILED:       msg('interrupt_network'),
+  NETWORK_TIMEOUT:      msg('interrupt_timeout'),
+  NETWORK_DISCONNECTED: msg('interrupt_disconnected'),
+  SERVER_BAD_CONTENT:   msg('interrupt_bad_content'),
+  SERVER_UNAUTHORIZED:  msg('interrupt_unauthorized'),
+  SERVER_FORBIDDEN:     msg('interrupt_forbidden'),
+  USER_CANCELED:        msg('interrupt_cancelled'),
+  CRASH:                msg('interrupt_crash'),
 };
+
+/**
+ * Fix #22: i18n helper — wraps chrome.i18n.getMessage with fallback.
+ * Usage: msg('toast_refreshed') → 'Refreshed.' (from _locales/en/messages.json)
+ * Falls back to the key itself if chrome.i18n is unavailable or key is missing.
+ */
+function msg(key, substitutions) {
+  try {
+    const val = chrome.i18n?.getMessage(key, substitutions);
+    return val || key;
+  } catch { return key; }
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Button icon SVG registry
@@ -226,7 +238,7 @@ function createFileIcon(item) {
 
   const iconEl = document.createElement('div');
   iconEl.className = 'fi-icon';
-  iconEl.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${def.path}</svg>`;
+  iconEl.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${def.path}</svg>`; /* STATIC SVG — def.path from ICON_DEFS constants only */
 
   const extEl = document.createElement('span');
   extEl.className = 'fi-ext';
@@ -271,8 +283,12 @@ const state = {
 
 const modalState   = { resolve: null, lastFocused: null };
 const speedHistory = new Map();
+/** Fix #10: Track last-update timestamp per download id for poller coordination */
+const itemGeneration = new Map();
 let   pollTimer    = null;
 let   prevCounts   = {};
+/** Fix #16: Module-level reference — avoids window global */
+let   _syncSortPopoverFn = null;
 
 /* Batch-erase state — pending IDs are flushed in a microtask */
 const pendingEraseIds  = new Set();
@@ -290,11 +306,7 @@ function setText(sel, value) {
   return node;
 }
 
-function setHtml(sel, value) {
-  const node = $(sel);
-  if (node) node.innerHTML = value;
-  return node;
-}
+/* setHtml removed — Fix #8 eliminated all callers. innerHTML on user data is not permitted. */
 
 function toggleClass(sel, className, force) {
   const node = $(sel);
@@ -368,6 +380,11 @@ function getCompletedSize(item) {
   );
 }
 
+/** Fix #3: Safe decoder — never throws on malformed percent-encoding */
+function safeDecode(str) {
+  try { return decodeURIComponent(str); } catch { return str; }
+}
+
 function getFilename(item) {
   if (item.filename) {
     const norm  = item.filename.replace(/\\/g, '/');
@@ -378,10 +395,10 @@ function getFilename(item) {
   if (url) {
     try {
       const seg = new URL(url).pathname.split('/').filter(Boolean).pop();
-      if (seg) return decodeURIComponent(seg);
+      if (seg) return safeDecode(seg);
     } catch {
       const seg = url.split('/').filter(Boolean).pop();
-      if (seg) return decodeURIComponent(seg.split('?')[0]);
+      if (seg) return safeDecode(seg.split('?')[0]);
     }
   }
   return `download-${item.id}`;
@@ -430,10 +447,10 @@ function formatRelDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   const diff = Date.now() - date.getTime();
-  if (diff < 60_000)      return 'Just now';
+  if (diff < 60_000)      return msg('time_just_now');
   if (diff < 3_600_000)   return `${Math.floor(diff / 60_000)}m ago`;
   if (diff < 86_400_000)  return `${Math.floor(diff / 3_600_000)}h ago`;
-  if (diff < 172_800_000) return 'Yesterday';
+  if (diff < 172_800_000) return msg('time_yesterday');
   if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
   return date.toLocaleDateString(undefined, { month:'short', day:'numeric',
     ...(date.getFullYear() !== new Date().getFullYear() ? { year:'numeric' } : {}) });
@@ -549,7 +566,7 @@ function el(tag, props = {}, ...children) {
     if (v == null) continue;
     if (k === 'class') node.className = v;
     else if (k === 'text') node.textContent = v;
-    else if (k === 'html') node.innerHTML = v;
+    /* 'html' property intentionally removed — use textContent or child nodes */
     else if (k.startsWith('on')) node.addEventListener(k.slice(2).toLowerCase(), v);
     else node.setAttribute(k, v);
   }
@@ -559,6 +576,99 @@ function el(tag, props = {}, ...children) {
     else node.appendChild(document.createTextNode(String(c)));
   }
   return node;
+}
+
+/**
+ * Fix #23: Full ARIA menu keyboard pattern.
+ * - Roving tabindex: active item gets tabindex="0", rest get "-1"
+ * - Arrow Up/Down, Home, End, Escape navigation
+ * - Typeahead: pressing a letter focuses first item starting with that letter
+ * - Returns a controller with activate()/deactivate() for popover open/close
+ */
+function wireMenuKeyboard(container, itemSelector, onClose) {
+  if (!container) return { activate() {}, deactivate() {} };
+
+  let typeaheadTimer = null;
+  let typeaheadBuf = '';
+
+  function getItems() {
+    return Array.from(container.querySelectorAll(`${itemSelector}:not(:disabled)`));
+  }
+
+  /** Set roving tabindex — only `activeEl` is tabbable */
+  function setRovingIndex(items, activeEl) {
+    for (const it of items) {
+      it.setAttribute('tabindex', it === activeEl ? '0' : '-1');
+    }
+  }
+
+  /** Move focus and update roving index */
+  function focusItem(items, idx) {
+    if (idx < 0 || idx >= items.length) return;
+    setRovingIndex(items, items[idx]);
+    items[idx].focus();
+  }
+
+  container.addEventListener('keydown', e => {
+    const items = getItems();
+    if (!items.length) return;
+    const idx = items.indexOf(document.activeElement);
+    let next = -1;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        next = idx < items.length - 1 ? idx + 1 : 0;
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        next = idx > 0 ? idx - 1 : items.length - 1;
+        break;
+      case 'Home':
+        e.preventDefault();
+        next = 0;
+        break;
+      case 'End':
+        e.preventDefault();
+        next = items.length - 1;
+        break;
+      case 'Escape':
+        e.preventDefault();
+        if (onClose) onClose();
+        return;
+      default:
+        /* Typeahead: single printable character → jump to matching item */
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          e.preventDefault();
+          clearTimeout(typeaheadTimer);
+          typeaheadBuf += e.key.toLowerCase();
+          typeaheadTimer = setTimeout(() => { typeaheadBuf = ''; }, 500);
+          const match = items.findIndex(it =>
+            (it.textContent || '').trim().toLowerCase().startsWith(typeaheadBuf)
+          );
+          if (match >= 0) next = match;
+        }
+        break;
+    }
+    if (next >= 0) focusItem(items, next);
+  });
+
+  return {
+    /** Call when the popover opens — focuses first or active item */
+    activate() {
+      const items = getItems();
+      if (!items.length) return;
+      const active = items.find(it => it.classList.contains('active')) || items[0];
+      setRovingIndex(items, active);
+      active.focus();
+    },
+    /** Call when the popover closes — reset tabindex */
+    deactivate() {
+      const items = getItems();
+      for (const it of items) it.setAttribute('tabindex', '-1');
+      typeaheadBuf = '';
+    },
+  };
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -578,13 +688,19 @@ function invoke(api, method, ...args) {
   });
 }
 
+/** Fix #9: Preserve error detail from runtime.lastError and background reasons */
 function sendMsg(payload) {
   return new Promise(resolve => {
     try {
       chrome.runtime.sendMessage(payload, r => {
-        resolve(chrome.runtime.lastError ? { ok: false } : (r || { ok: false }));
+        const err = chrome.runtime.lastError;
+        if (err) {
+          resolve({ ok: false, reason: err.message || 'runtime_error' });
+        } else {
+          resolve(r || { ok: false, reason: 'empty_response' });
+        }
       });
-    } catch { resolve({ ok: false }); }
+    } catch (e) { resolve({ ok: false, reason: e?.message || 'send_failed' }); }
   });
 }
 
@@ -637,11 +753,18 @@ function startPollIfNeeded() {
 
 async function pollActive() {
   try {
+    const pollTime = Date.now();
     const items = await invoke(chrome.downloads, 'search', { state: 'in_progress' });
     if (!Array.isArray(items) || !items.length) { clearInterval(pollTimer); pollTimer = null; return; }
     for (const u of items) {
       const ex = state.downloads.find(d => d.id === u.id);
-      if (ex) { recordSpeed(u.id, u.bytesReceived); Object.assign(ex, u); patchActiveCard(ex); }
+      if (!ex) continue;
+      /* Fix #10: Skip if an event-driven update arrived after this poll started */
+      const lastGen = itemGeneration.get(u.id) || 0;
+      if (lastGen > pollTime) continue;
+      recordSpeed(u.id, u.bytesReceived);
+      Object.assign(ex, u);
+      patchActiveCard(ex);
     }
     updateSidebarStats();
   } catch { /* ignore */ }
@@ -735,12 +858,12 @@ function patchActiveCard(item) {
 function getStatusInfo(item) {
   if (item.state === 'complete') {
     if (item.exists === false)
-      return { label: 'Missing',   cls: 'badge-missing',  dot: true, progress: null };
-    return   { label: 'Complete',  cls: 'badge-complete', dot: true, progress: null };
+      return { label: msg('status_missing'),   cls: 'badge-missing',  dot: true, progress: null };
+    return   { label: msg('status_complete'),  cls: 'badge-complete', dot: true, progress: null };
   }
   if (item.state === 'in_progress') {
     if (item.paused)
-      return { label: 'Paused',    cls: 'badge-paused',   dot: true, progress: progressPct(item) };
+      return { label: msg('status_paused'),    cls: 'badge-paused',   dot: true, progress: progressPct(item) };
     const p = progressPct(item);
     return   { label: p != null ? `${p}%` : 'Downloading', cls: 'badge-progress', dot: true, progress: p };
   }
@@ -758,12 +881,35 @@ function progressPct(item) {
 /* ─────────────────────────────────────────────────────────────────────────
    Search highlighting
    ───────────────────────────────────────────────────────────────────────── */
-function highlight(text, query) {
-  if (!query || !text) return escapeHtml(text || '');
+/**
+ * Search highlighting — DOM-based (no innerHTML).
+ * Populates `target` with text nodes and <mark> elements.
+ */
+function highlightInto(target, text, query) {
+  target.textContent = '';
+  if (!query || !text) {
+    target.textContent = text || '';
+    return;
+  }
   const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  try {
-    return escapeHtml(text).replace(new RegExp(escapeHtml(esc), 'gi'), m => `<mark>${m}</mark>`);
-  } catch { return escapeHtml(text); }
+  let re;
+  try { re = new RegExp(esc, 'gi'); } catch { target.textContent = text; return; }
+
+  let lastIndex = 0;
+  let match;
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      target.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+    }
+    const mark = document.createElement('mark');
+    mark.textContent = match[0];
+    target.appendChild(mark);
+    lastIndex = re.lastIndex;
+    if (match[0].length === 0) { re.lastIndex++; } /* prevent infinite loop on zero-width match */
+  }
+  if (lastIndex < text.length) {
+    target.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -808,7 +954,7 @@ function getFiltered() {
 
 function groupItems(items) {
   if (!state.sortBy.startsWith('date')) {
-    const label = state.sortBy.startsWith('name') ? 'Sorted by name' : 'Sorted by size';
+    const label = state.sortBy.startsWith('name') ? msg('group_sorted_by_name') : msg('group_sorted_by_size');
     return [{ label, items }];
   }
   const now    = new Date();
@@ -820,7 +966,7 @@ function groupItems(items) {
     const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     let label = null;
     for (const g of DATE_GROUPS) { if (g.test(day, today)) { label = g.label; break; } }
-    if (!label) label = Number.isNaN(d.getTime()) ? 'Unknown date' :
+    if (!label) label = Number.isNaN(d.getTime()) ? msg('group_unknown_date') :
       d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
     if (!map.has(label)) { const b = { label, items: [] }; map.set(label, b); groups.push(b); }
     map.get(label).items.push(item);
@@ -857,6 +1003,17 @@ function pruneSelection() {
   for (const id of [...state.selected]) { if (!valid.has(id)) state.selected.delete(id); }
 }
 
+/**
+ * Fix #6: Card fingerprint for keyed reconciliation.
+ * If fingerprint matches, the card DOM can be reused with minimal patching.
+ */
+function cardFingerprint(item) {
+  return `${item.state}|${item.exists}|${item.paused}|${state.selected.has(item.id)}|${state.searchQuery}`;
+}
+
+/** Map of card-id → { element, fingerprint } for reuse across renders */
+const _cardCache = new Map();
+
 function renderAll() {
   toggleClass('#loading-state', 'hidden', !state.isLoading);
   syncDateInputs();
@@ -876,16 +1033,50 @@ function renderAll() {
 
   const list = $('#downloads-list');
   if (!list) return;
-  list.innerHTML = '';
-  if (!rendered.length) return;
 
-  for (const group of groupItems(rendered)) {
-    const sec = el('section', { class: 'date-group', 'data-label': group.label },
-      el('h2', { class: 'date-group-label', text: group.label })
-    );
-    for (const item of group.items) sec.appendChild(buildCard(item));
-    list.appendChild(sec);
+  /* Fix #6: Keyed reconciliation — reuse existing card nodes where possible */
+  const renderedIds = new Set();
+  const frag = document.createDocumentFragment();
+
+  if (rendered.length) {
+    for (const group of groupItems(rendered)) {
+      const sec = el('section', { class: 'date-group', 'data-label': group.label },
+        el('h2', { class: 'date-group-label', text: group.label })
+      );
+      for (const item of group.items) {
+        renderedIds.add(item.id);
+        const fp = cardFingerprint(item);
+        const cached = _cardCache.get(item.id);
+
+        try {
+          if (cached && cached.fingerprint === fp) {
+            /* Reuse existing card — selection toggle is the only lightweight update */
+            cached.element.classList.toggle('is-selected', state.selected.has(item.id));
+            const cb = cached.element.querySelector('.item-check');
+            if (cb) cb.checked = state.selected.has(item.id);
+            sec.appendChild(cached.element);
+          } else {
+            /* Build new card and cache it */
+            const card = buildCard(item);
+            _cardCache.set(item.id, { element: card, fingerprint: fp });
+            sec.appendChild(card);
+          }
+        } catch (err) {
+          console.error(`[Downloads Manager] Failed to render card id=${item?.id}:`, err);
+        }
+      }
+      frag.appendChild(sec);
+    }
   }
+
+  /* Evict stale entries from cache */
+  for (const [id] of _cardCache) {
+    if (!renderedIds.has(id)) _cardCache.delete(id);
+  }
+
+  /* Single DOM mutation: swap old content for new */
+  while (list.firstChild) list.firstChild.remove();
+  list.appendChild(frag);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -914,8 +1105,9 @@ function updateCounts(filtered) {
 
   // "On disk" — completed files + bytes already written for active downloads.
   // When items are selected, restrict to that subset.
+  /* Fix #18: Explicit parentheses for clarity */
   const diskSource = state.selected.size > 0
-    ? filtered.filter(d => state.selected.has(d.id) && (d.state === 'complete' && d.exists !== false || d.state === 'in_progress'))
+    ? filtered.filter(d => state.selected.has(d.id) && ((d.state === 'complete' && d.exists !== false) || d.state === 'in_progress'))
     : filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
   const diskTotal = diskSource.reduce((s, d) => {
     if (d.state === 'in_progress') return s + (d.bytesReceived > 0 ? d.bytesReceived : 0);
@@ -950,8 +1142,9 @@ function updateSidebarStats() {
   setText('#active-count', c.active || '—');
 
   // "On disk" — completed files + bytes already written for active downloads.
+  /* Fix #18: Explicit parentheses for clarity */
   const diskSource = state.selected.size > 0
-    ? filtered.filter(d => state.selected.has(d.id) && (d.state === 'complete' && d.exists !== false || d.state === 'in_progress'))
+    ? filtered.filter(d => state.selected.has(d.id) && ((d.state === 'complete' && d.exists !== false) || d.state === 'in_progress'))
     : filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
   const diskTotal = diskSource.reduce((s, d) => {
     if (d.state === 'in_progress') return s + (d.bytesReceived > 0 ? d.bytesReceived : 0);
@@ -1020,11 +1213,11 @@ function setEmpty(filtered) {
   if (!emp) return;
   if (filtered.length) { emp.classList.add('hidden'); return; }
   emp.classList.remove('hidden');
-  const msg = { complete:'No completed downloads', in_progress:'No active downloads',
-    failed:'No failed downloads', missing:'No missing files' };
+  const msg = { complete:msg('empty_no_complete'), in_progress:msg('empty_no_active'),
+    failed:msg('empty_no_failed'), missing:msg('empty_no_missing') };
   setText('#empty-message', state.searchQuery
     ? `No results for "${state.searchQuery}"`
-    : (msg[state.filterStatus] || 'No downloads yet'));
+    : (msg[state.filterStatus] || msg('empty_title')));
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1069,20 +1262,20 @@ function buildCard(item) {
 
   /* Info */
   const nameEl = el('div', { class:'file-name', title: filename });
-  nameEl.innerHTML = q ? highlight(filename, q) : escapeHtml(filename);
+  highlightInto(nameEl, filename, q);
 
   const urlVal = item.finalUrl || item.url || '';
   const urlEl  = el('div', { class:'file-url' });
   if (urlVal) {
     const a = el('a', { href:urlVal, target:'_blank', rel:'noopener noreferrer', title:urlVal });
-    a.innerHTML = q ? highlight(truncateUrl(urlVal), q) : escapeHtml(truncateUrl(urlVal));
+    highlightInto(a, truncateUrl(urlVal), q);
     urlEl.appendChild(a);
   } else {
-    urlEl.textContent = 'No source URL';
+    urlEl.textContent = msg('no_source_url');
   }
 
   const pathEl = el('div', { class:'file-path', title: item.filename || '',
-    text: item.filename || 'Path unavailable' });
+    text: item.filename || msg('path_unavailable') });
 
   /* Meta row */
   const meta = el('div', { class:'file-meta' });
@@ -1149,11 +1342,12 @@ function buildCard(item) {
   }
 
   /* Delete button — always does delete+erase for one-click cleanup */
+  /* Fix #11: Only disable when item is actively downloading (can't delete mid-stream) */
   const delHtml = isMissing
-    ? btnIcon('delete', 'Gone')
+    ? btnIcon('delete', 'Remove')
     : btnIcon('delete', 'Delete');
   const delBtn = mkBtn(delHtml, () => deleteAndErase(item.id), `Delete ${filename}`);
-  delBtn.disabled = isMissing || (!isComplete && !isMissing);
+  delBtn.disabled = isActive;
   delBtn.classList.add('btn-delete');
   actions.appendChild(delBtn);
 
@@ -1171,7 +1365,7 @@ function mkBtn(htmlContent, handler, ariaLabel, extra = '') {
   b.className = `action-btn glass-btn ${extra}`.trim();
   b.type = 'button';
   b.setAttribute('aria-label', ariaLabel);
-  b.innerHTML = htmlContent;
+  b.innerHTML = htmlContent; /* STATIC SVG — htmlContent from btnIcon() uses BTN_ICONS constants + escapeHtml(text) only */
   b.addEventListener('click', e => { e.stopPropagation(); handler(e); });
   attachRipple(b);
   return b;
@@ -1199,13 +1393,32 @@ function selectAllFiltered() {
 /* ─────────────────────────────────────────────────────────────────────────
    Modal
    ───────────────────────────────────────────────────────────────────────── */
-function showModal({ title, bodyHtml, confirmLabel = 'Confirm', confirmCls = 'danger-btn', icon = '' }) {
+/**
+ * showModal — safe structured data only.
+ * - `body`   : plain text, set via textContent (safe by default)
+ * - `bodyEl` : optional DOM node/fragment to append directly
+ * No raw HTML accepted. All dynamic content uses textContent or pre-built DOM.
+ */
+function showModal({ title, body, bodyEl, confirmLabel = 'Confirm', confirmCls = 'danger-btn', icon = '' }) {
   return new Promise(resolve => {
     modalState.lastFocused = document.activeElement;
     modalState.resolve     = resolve;
     setText('#modal-icon', icon);
     setText('#modal-title', title);
-    setHtml('#modal-body', bodyHtml);
+
+    const bodyContainer = $('#modal-body');
+    if (bodyContainer) {
+      while (bodyContainer.firstChild) bodyContainer.firstChild.remove();
+      if (body) {
+        const p = document.createElement('p');
+        p.textContent = body;
+        bodyContainer.appendChild(p);
+      }
+      if (bodyEl instanceof Node) {
+        bodyContainer.appendChild(bodyEl);
+      }
+    }
+
     const confirmBtn = $('#modal-confirm');
     confirmBtn.className = `glass-btn modal-btn ${confirmCls}`;
     if (confirmBtn) confirmBtn.textContent = confirmLabel;
@@ -1240,7 +1453,7 @@ function toast(message, type = 'info', duration = 4000) {
 
   const ind = document.createElement('div');
   ind.className = 'toast-indicator';
-  ind.innerHTML = TOAST_ICONS[type] || TOAST_ICONS.info;
+  ind.innerHTML = TOAST_ICONS[type] || TOAST_ICONS.info; /* STATIC SVG — from TOAST_ICONS constants only */
 
   const msg = document.createElement('span');
   msg.textContent = message;
@@ -1286,7 +1499,7 @@ function addCtxItem(menu, { iconHtml, label, onClick, danger = false, disabled =
 
   const iconEl = document.createElement('span');
   iconEl.className = 'ctx-icon';
-  iconEl.innerHTML = iconHtml;
+  iconEl.innerHTML = iconHtml; /* STATIC SVG — iconHtml from ctxSvg() string literals only */
 
   const lbl = document.createElement('span');
   lbl.textContent = label;
@@ -1331,8 +1544,8 @@ function showCtxMenu(e, item) {
   menu.setAttribute('role', 'menu');
 
   if (isComplete) {
-    addCtxItem(menu, { iconHtml: ctxSvg('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>'), label:'Open file', onClick:()=>openFile(item.id) });
-    addCtxItem(menu, { iconHtml: ctxSvg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'), label:'Reveal in folder', onClick:()=>revealFile(item.id) });
+    addCtxItem(menu, { iconHtml: ctxSvg('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>'), label:msg('ctx_open_file'), onClick:()=>openFile(item.id) });
+    addCtxItem(menu, { iconHtml: ctxSvg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'), label:msg('ctx_reveal_folder'), onClick:()=>revealFile(item.id) });
     ctxDiv(menu);
   }
   if (isActive) {
@@ -1341,20 +1554,20 @@ function showCtxMenu(e, item) {
       : ctxSvg('<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'),
       label: item.paused ? 'Resume' : 'Pause',
       onClick: () => item.paused ? resumeDl(item.id) : pauseDl(item.id) });
-    addCtxItem(menu, { iconHtml: ctxSvg('<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'), label:'Cancel download', danger:true, onClick:()=>cancelDl(item.id) });
+    addCtxItem(menu, { iconHtml: ctxSvg('<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'), label:msg('ctx_cancel_download'), danger:true, onClick:()=>cancelDl(item.id) });
     ctxDiv(menu);
   }
   if (canAgain && !isActive) {
-    addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'), label:'Download again', onClick:()=>dlAgain(item) });
+    addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'), label:msg('ctx_download_again'), onClick:()=>dlAgain(item) });
     ctxDiv(menu);
   }
-  addCtxItem(menu, { iconHtml: ctxSvg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'), label:'Delete file from disk', disabled:!isComplete||isMissing, onClick:()=>deleteFromDisk(item.id) });
-  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="5" y1="3" x2="19" y2="21"/>'), label:'Delete + remove history', danger:true, disabled:!isComplete||isMissing, onClick:()=>deleteAndErase(item.id) });
+  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="5" y1="3" x2="19" y2="21"/>'), label:msg('ctx_remove_history'), onClick:()=>eraseHistory(item.id) });
+  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'), label:msg('ctx_delete_from_disk'), disabled:!isComplete||isMissing, onClick:()=>deleteFromDisk(item.id) });
+  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'), label:msg('ctx_delete_and_erase'), danger:true, disabled:!isComplete||isMissing, onClick:()=>deleteAndErase(item.id) });
   ctxDiv(menu);
-  addCtxItem(menu, { iconHtml: ctxSvg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'), label:'Remove from history', onClick:()=>eraseHistory(item.id) });
-  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:'Copy URL', disabled:!item.url&&!item.finalUrl, onClick:async()=>{ try{ await navigator.clipboard.writeText(item.finalUrl||item.url); toast('URL copied.','success'); }catch{ toast('Clipboard failed.','error'); }} });
-  addCtxItem(menu, { iconHtml: ctxSvg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'), label:'Copy file path', disabled:!item.filename, onClick:async()=>{ try{ await navigator.clipboard.writeText(item.filename); toast('Path copied.','success'); }catch{ toast('Clipboard failed.','error'); }} });
-  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:'Copy filename', onClick:async()=>{ try{ await navigator.clipboard.writeText(getFilename(item)); toast('Filename copied.','success'); }catch{ toast('Clipboard failed.','error'); }} });
+  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:msg('ctx_copy_url'), disabled:!item.url&&!item.finalUrl, onClick:async()=>{ try{ await navigator.clipboard.writeText(item.finalUrl||item.url); toast(msg('toast_url_copied'),'success'); }catch{ toast(msg('toast_clipboard_failed'),'error'); }} });
+  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:msg('ctx_copy_path'), disabled:!item.filename, onClick:async()=>{ try{ await navigator.clipboard.writeText(item.filename); toast(msg('toast_path_copied'),'success'); }catch{ toast(msg('toast_clipboard_failed'),'error'); }} });
+  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:msg('ctx_copy_filename'), onClick:async()=>{ try{ await navigator.clipboard.writeText(getFilename(item)); toast(msg('toast_filename_copied'),'success'); }catch{ toast(msg('toast_clipboard_failed'),'error'); }} });
 
   /* Position — keep within viewport */
   document.body.appendChild(menu);
@@ -1388,12 +1601,12 @@ function revealFile(id) {
 }
 
 async function pauseDl(id) {
-  try { await invoke(chrome.downloads, 'pause', id);  toast('Paused.',   'info',    2200); }
+  try { await invoke(chrome.downloads, 'pause', id);  toast(msg('toast_paused'), 'info', 2200); }
   catch(e) { toast(`Pause failed: ${e.message}`, 'error'); }
 }
 
 async function resumeDl(id) {
-  try { await invoke(chrome.downloads, 'resume', id); toast('Resumed.', 'success', 2200); }
+  try { await invoke(chrome.downloads, 'resume', id); toast(msg('toast_resumed'), 'success', 2200); }
   catch(e) { toast(`Resume failed: ${e.message}`, 'error'); }
 }
 
@@ -1401,19 +1614,28 @@ async function cancelDl(id) {
   const item = state.downloads.find(d => d.id === id);
   if (!item) return;
   const ok = await showModal({
-    title: 'Cancel download?',
-    bodyHtml: `<strong>${escapeHtml(getFilename(item))}</strong> will stop and any partial file removed.`,
+    title: msg('modal_cancel_download'),
+    body: `"${getFilename(item)}" will stop and any partial file removed.`,
     confirmLabel: 'Cancel download', confirmCls: 'danger-btn', icon: '⏹️',
   });
   if (!ok) return;
-  try { await invoke(chrome.downloads, 'cancel', id); toast('Download cancelled.', 'info', 2800); }
+  try { await invoke(chrome.downloads, 'cancel', id); toast(msg('toast_cancelled'), 'info', 2800); }
   catch(e) { toast(`Cancel failed: ${e.message}`, 'error'); }
 }
 
 async function dlAgain(item) {
   const url = item.finalUrl || item.url;
-  if (!url) { toast('No source URL.', 'warning'); return; }
-  try { await invoke(chrome.downloads, 'download', { url, saveAs: false }); toast('Download started again.', 'success'); }
+  if (!url) { toast(msg('toast_no_source_url'), 'warning'); return; }
+  /* Fix #20: Confirm with full URL — signed/expiring URLs may have changed */
+  const urlHint = el('p', { class:'modal-url-hint', style:'word-break:break-all;font-size:0.85em;opacity:0.8;margin-top:6px', text: truncateUrl(url, 120) });
+  const ok = await showModal({
+    title: msg('modal_download_again_title'),
+    body: 'This will re-download from the original URL. Signed or expiring links may no longer work.',
+    bodyEl: urlHint,
+    confirmLabel: 'Download', confirmCls: 'ghost-btn', icon: '🔄',
+  });
+  if (!ok) return;
+  try { await invoke(chrome.downloads, 'download', { url, saveAs: true }); toast(msg('toast_download_started'), 'success'); }
   catch(e) { toast(`Could not restart: ${e.message}`, 'error'); }
 }
 
@@ -1427,8 +1649,8 @@ async function deleteFromDisk(id, { skipConfirm = false } = {}) {
   if (!item) return false;
   if (!skipConfirm) {
     const ok = await showModal({
-      title: 'Delete file from disk?',
-      bodyHtml: `<strong>${escapeHtml(getFilename(item))}</strong> will be permanently removed. History record stays.`,
+      title: msg('modal_delete_title'),
+      body: `"${getFilename(item)}" will be permanently removed. History record stays.`,
       confirmLabel: 'Delete file', confirmCls: 'danger-btn', icon: '🗑️',
     });
     if (!ok) return false;
@@ -1438,7 +1660,7 @@ async function deleteFromDisk(id, { skipConfirm = false } = {}) {
     markMissing(id); toast(`Deleted "${getFilename(item)}".`, 'success'); scheduleRender(); return true;
   } catch(e) {
     if (/not exist|already|No such/i.test(e.message)) {
-      markMissing(id); toast('File was already missing.', 'warning'); scheduleRender(); return true;
+      markMissing(id); toast(msg('toast_file_already_missing'), 'warning'); scheduleRender(); return true;
     }
     toast(`Delete failed: ${e.message}`, 'error'); return false;
   }
@@ -1449,19 +1671,19 @@ async function eraseHistory(id, { skipConfirm = false } = {}) {
   if (!item) return false;
   if (!skipConfirm) {
     const ok = await showModal({
-      title: 'Remove from history?',
-      bodyHtml: `<strong>${escapeHtml(getFilename(item))}</strong> removed from history. File on disk untouched.`,
+      title: msg('modal_erase_title'),
+      body: `"${getFilename(item)}" removed from history. File on disk untouched.`,
       confirmLabel: 'Remove', confirmCls: 'ghost-btn', icon: '📋',
     });
     if (!ok) return false;
   }
-  try { await invoke(chrome.downloads, 'erase', { id }); toast('Removed from history.', 'success'); return true; }
+  try { await invoke(chrome.downloads, 'erase', { id }); toast(msg('toast_removed_history'), 'success'); return true; }
   catch(e) { toast(`Removal failed: ${e.message}`, 'error'); return false; }
 }
 
 /**
  * Delete the file from disk AND remove the history record.
- * This is what the per-item "Delete" card button calls.
+ * Fix #1: Transactional — only erases history if disk delete succeeds.
  */
 async function deleteAndErase(id) {
   const item = state.downloads.find(d => d.id === id);
@@ -1473,13 +1695,17 @@ async function deleteAndErase(id) {
     return;
   }
   const ok = await showModal({
-    title: 'Delete + remove history?',
-    bodyHtml: `<strong>${escapeHtml(getFilename(item))}</strong> will be deleted from disk and removed from history.`,
+    title: msg('modal_delete_erase_title'),
+    body: `${escapeHtml(getFilename(item))} will be deleted from disk and removed from history.`,
     confirmLabel: 'Delete + remove', confirmCls: 'danger-btn', icon: '🗑️',
   });
   if (!ok) return;
-  await deleteFromDisk(id, { skipConfirm: true });
-  await eraseHistory(id,   { skipConfirm: true });
+  const deleted = await deleteFromDisk(id, { skipConfirm: true });
+  if (deleted) {
+    await eraseHistory(id, { skipConfirm: true });
+  } else {
+    toast(msg('toast_delete_kept_history'), 'warning');
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1488,24 +1714,51 @@ async function deleteAndErase(id) {
 async function bulkDelete() {
   const sel  = getFiltered().filter(d => state.selected.has(d.id));
   const elig = sel.filter(d => d.state === 'complete' && d.exists !== false);
-  if (!elig.length) { toast('No eligible items.', 'warning'); return; }
+  if (!elig.length) { toast(msg('toast_no_eligible'), 'warning'); return; }
 
-  const list = elig.map(d => `<li>${escapeHtml(getFilename(d))}</li>`).join('');
+  /* Build file list via DOM — no innerHTML */
+  const frag = document.createDocumentFragment();
+  const ul = el('ul', { class: 'modal-file-list' });
+  for (const d of elig) ul.appendChild(el('li', { text: getFilename(d) }));
+  frag.appendChild(ul);
   const skip = sel.length - elig.length;
-  const ok   = await showModal({
+  if (skip) frag.appendChild(el('p', { style:'margin-top:8px', text: `${skip} item${skip === 1 ? '' : 's'} skipped (not complete or already missing).` }));
+
+  const ok = await showModal({
     title: `Delete + remove ${elig.length} item${elig.length === 1 ? '' : 's'}?`,
-    bodyHtml: `Files will be deleted from disk and removed from history.<ul class="modal-file-list">${list}</ul>${skip ? `<p style="margin-top:8px">${skip} item${skip === 1 ? '' : 's'} skipped (not complete or already missing).</p>` : ''}`,
+    body: 'Files will be deleted from disk and removed from history.',
+    bodyEl: frag,
     confirmLabel: `Delete ${elig.length}`, confirmCls: 'danger-btn', icon: '🗑️',
   });
   if (!ok) return;
 
-  let done = 0;
-  for (const d of elig) {
-    const ok1 = await deleteFromDisk(d.id, { skipConfirm: true });
-    await eraseHistory(d.id, { skipConfirm: true });
-    if (ok1) done++;
+  /* Fix #1 + #19: Transactional per-item + progress toast + chunked yields */
+  let deleted = 0;
+  let erased  = 0;
+  let failed  = 0;
+  const CHUNK = 10;
+
+  for (let i = 0; i < elig.length; i++) {
+    const d = elig[i];
+    const diskOk = await deleteFromDisk(d.id, { skipConfirm: true });
+    if (diskOk) {
+      deleted++;
+      const eraseOk = await eraseHistory(d.id, { skipConfirm: true });
+      if (eraseOk) erased++;
+    } else {
+      failed++;
+    }
+    /* Yield to UI every CHUNK items for responsiveness */
+    if ((i + 1) % CHUNK === 0) {
+      await new Promise(r => requestAnimationFrame(r));
+    }
   }
-  toast(`Deleted ${done} of ${elig.length}.`, done === elig.length ? 'success' : 'warning');
+
+  if (failed === 0) {
+    toast(`Deleted ${deleted} of ${elig.length}.`, 'success');
+  } else {
+    toast(`Deleted ${deleted}, failed ${failed} — history kept for failures.`, 'warning');
+  }
   clearSel();
 }
 
@@ -1514,7 +1767,7 @@ async function bulkErase() {
   if (!ids.length) return;
   const ok = await showModal({
     title: `Remove ${ids.length} from history?`,
-    bodyHtml: 'Files on disk are untouched.',
+    body: 'Files on disk are untouched.',
     confirmLabel: 'Remove history', confirmCls: 'ghost-btn', icon: '📋',
   });
   if (!ok) return;
@@ -1527,16 +1780,16 @@ async function bulkErase() {
 async function clearAll() {
   if (!state.downloads.length) return;
   const ok = await showModal({
-    title: 'Clear all download history?',
-    bodyHtml: `All ${state.downloads.length} records removed. Files on disk unaffected.`,
+    title: msg('modal_clear_all_title'),
+    body: `All ${state.downloads.length} records removed. Files on disk unaffected.`,
     confirmLabel: 'Clear history', confirmCls: 'ghost-btn', icon: '🗂️',
   });
   if (!ok) return;
   try {
     await invoke(chrome.downloads, 'erase', {});
-    state.downloads = []; speedHistory.clear();
+    state.downloads = []; speedHistory.clear(); _cardCache.clear();
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    clearSel(); scheduleRender(); toast('History cleared.', 'success');
+    clearSel(); scheduleRender(); toast(msg('toast_history_cleared'), 'success');
   } catch(e) { toast(`Failed: ${e.message}`, 'error'); }
 }
 
@@ -1595,7 +1848,7 @@ async function restorePrefs() {
 async function loadDownloads({ silent = false } = {}) {
   if (!silent) state.isLoading = true;
   try {
-    const items = await invoke(chrome.downloads, 'search', { orderBy: ['-startTime'], limit: 0 });
+    const items = await invoke(chrome.downloads, 'search', { orderBy: ['-startTime'] });
     state.downloads = Array.isArray(items) ? items : [];
   } finally { state.isLoading = false; }
 }
@@ -1607,7 +1860,7 @@ async function refresh() {
   if (btn) btn.setAttribute('aria-busy', 'true');
   try {
     await loadDownloads({ silent: true });
-    toast('Refreshed.', 'info', 2400);
+    toast(msg('toast_refreshed'), 'info', 2400);
     scheduleRender();
   } catch(e) { toast(`Refresh failed: ${e.message}`, 'error'); }
   finally { state.isRefreshing = false; if (btn) btn.removeAttribute('aria-busy'); }
@@ -1638,8 +1891,15 @@ function bindChrome() {
       if (k === 'id') continue;
       if (v && typeof v === 'object' && 'current' in v) item[k] = v.current;
     }
+    /* Fix #10: Stamp generation so the poller skips stale overwrites */
+    itemGeneration.set(delta.id, Date.now());
+
     // Clear speed data when download finishes/fails
     if (delta.state?.current && delta.state.current !== 'in_progress') {
+      speedHistory.delete(delta.id);
+    }
+    /* Fix #17: Clear speed data when paused — avoids stale accumulation */
+    if (delta.paused?.current === true) {
       speedHistory.delete(delta.id);
     }
     startPollIfNeeded();
@@ -1681,6 +1941,7 @@ function bindChrome() {
       for (const eid of pendingEraseIds) {
         state.selected.delete(eid);
         speedHistory.delete(eid);
+        itemGeneration.delete(eid); /* Fix #10/#17: Clean up tracking maps */
       }
       pendingEraseIds.clear();
       scheduleRender();
@@ -1694,10 +1955,10 @@ function bindChrome() {
    ───────────────────────────────────────────────────────────────────────── */
 const THEME_MODES  = ['auto', 'light', 'dark', 'midnight'];
 const THEME_LABELS = {
-  auto:     'Automatic',
-  light:    'Beige',
-  dark:     'Dark',
-  midnight: 'Midnight',
+  auto:     msg('theme_automatic'),
+  light:    msg('theme_beige'),
+  dark:     msg('theme_dark'),
+  midnight: msg('theme_midnight'),
 };
 /* color-scheme hint for each mode (affects browser chrome: scrollbars, inputs) */
 const THEME_COLOR_SCHEME = {
@@ -1828,17 +2089,23 @@ function applyExtFilter(ext) {
   resetRenderCount(); pruneSelection(); scheduleRender();
 }
 
+/** Fix #23: Module-level ext menu controller — set by wireMenuKeyboard in wire() */
+let _extMenuCtrl = { activate() {}, deactivate() {} };
+
 function openExtPopover() {
   const p = $('#ext-popover');
   const b = $('#btn-ext-filter');
   if (p) p.classList.remove('hidden');
   if (b) b.setAttribute('aria-expanded', 'true');
+  _extMenuCtrl.activate();
 }
 function closeExtPopover() {
   const p = $('#ext-popover');
   const b = $('#btn-ext-filter');
   if (p) p.classList.add('hidden');
   if (b) b.setAttribute('aria-expanded', 'false');
+  _extMenuCtrl.deactivate();
+  $('#btn-ext-filter')?.focus();
 }
 function toggleExtPopover() {
   const p = $('#ext-popover');
@@ -1930,10 +2197,7 @@ function wire() {
     applyDateMode('all');
   });
 
-  // Close popover when clicking outside
-  document.addEventListener('click', e => {
-    if (!dateFilterWrap || !dateFilterWrap.contains(e.target)) closeDatePopover();
-  });
+  /* Fix #14: Removed duplicate date popover close listener — handled by global click handler */
 
   // Theme picker — 4-button segmented control
   $$('[data-theme-option]').forEach(btn => {
@@ -1941,6 +2205,8 @@ function wire() {
   });
   // Ext filter trigger
   $('#btn-ext-filter')?.addEventListener('click', e => { e.stopPropagation(); toggleExtPopover(); });
+  /* Fix #23: Full ARIA menu keyboard pattern for ext filter popover */
+  _extMenuCtrl = wireMenuKeyboard($('#ext-popover'), '.ext-chip', closeExtPopover);
   // Ext clear
   $('#btn-clear-ext')?.addEventListener('click', () => { applyExtFilter('all'); });
   // Close ext popover on outside click (added to existing click handler below)
@@ -1951,7 +2217,7 @@ function wire() {
   });
   $('#btn-open-tab').addEventListener('click', async () => {
     const r = await sendMsg({ type: 'downloads-manager:open-tab' });
-    if (!r?.ok) toast('Could not open tab.', 'error');
+    if (!r?.ok) toast(msg('toast_could_not_open_tab'), 'error');
   });
   $('#btn-clear-all').addEventListener('click', clearAll);
   $('#btn-bulk-delete').addEventListener('click', bulkDelete);
@@ -1979,23 +2245,26 @@ function wire() {
   const btnSort     = $('#btn-sort');
 
   const SORT_NAMES = {
-    'date-desc': 'Newest first',
-    'date-asc':  'Oldest first',
-    'name-asc':  'Name A → Z',
-    'name-desc': 'Name Z → A',
-    'size-desc': 'Largest first',
-    'size-asc':  'Smallest first',
+    'date-desc': msg('sort_newest'),
+    'date-asc':  msg('sort_oldest'),
+    'name-asc':  msg('sort_name_asc'),
+    'name-desc': msg('sort_name_desc'),
+    'size-desc': msg('sort_largest'),
+    'size-asc':  msg('sort_smallest'),
   };
 
   function openSortPopover() {
     if (!sortPopover) return;
     sortPopover.classList.remove('hidden');
     btnSort?.setAttribute('aria-expanded', 'true');
+    sortMenuCtrl.activate();
   }
   function closeSortPopover() {
     if (!sortPopover) return;
     sortPopover.classList.add('hidden');
     btnSort?.setAttribute('aria-expanded', 'false');
+    sortMenuCtrl.deactivate();
+    btnSort?.focus();
   }
   function toggleSortPopover() {
     sortPopover?.classList.contains('hidden') ? openSortPopover() : closeSortPopover();
@@ -2010,6 +2279,9 @@ function wire() {
 
   btnSort?.addEventListener('click', e => { e.stopPropagation(); toggleSortPopover(); });
 
+  /* Fix #23: Full ARIA menu keyboard pattern for sort popover */
+  const sortMenuCtrl = wireMenuKeyboard(sortPopover, '.sort-opt', closeSortPopover);
+
   $$('.sort-opt', sortPopover).forEach(opt => {
     opt.addEventListener('click', () => {
       const key = opt.dataset.sort;
@@ -2018,8 +2290,8 @@ function wire() {
     });
   });
 
-  // Expose syncSortPopover so syncControls can call it
-  window._syncSortPopover = syncSortPopover;
+  // Fix #16: Expose syncSortPopover via module-level variable (no global)
+  _syncSortPopoverFn = syncSortPopover;
 
   $$('.filter-tab').forEach(btn => btn.addEventListener('click', () => {
     $$('.filter-tab').forEach(b => {
@@ -2105,7 +2377,7 @@ function applySearch(v) { state.searchQuery = v.trim(); resetRenderCount(); prun
 
 function syncControls() {
   // Sync sort popover label + active state
-  if (window._syncSortPopover) window._syncSortPopover(state.sortBy);
+  if (_syncSortPopoverFn) _syncSortPopoverFn(state.sortBy);
   $$('.filter-tab').forEach(btn => {
     const a = btn.dataset.filter === state.filterStatus;
     btn.classList.toggle('active', a);
@@ -2114,18 +2386,80 @@ function syncControls() {
   document.documentElement?.setAttribute('data-surface', state.surface);
 }
 
+/**
+ * Fix #22: Localize static HTML text via msg().
+ * Maps CSS selectors to message keys for all hardcoded English in the HTML.
+ */
+function i18nDom() {
+  const textMap = {
+    '.sidebar-logo span':                   'sidebar_title',
+    '[data-filter="all"] .tab-label':        'filter_all',
+    '[data-filter="complete"] .tab-label':   'filter_complete',
+    '[data-filter="in_progress"] .tab-label':'filter_in_progress',
+    '[data-filter="failed"] .tab-label':     'filter_failed',
+    '[data-filter="missing"] .tab-label':    'filter_missing',
+    '.stat-tile:nth-child(1) .stat-label':   'stat_visible',
+    '.stat-tile:nth-child(2) .stat-label':   'stat_selected',
+    '.stat-tile:nth-child(3) .stat-label':   'stat_active',
+    '.stat-tile:nth-child(4) .stat-label':   'stat_on_disk',
+    '#btn-open-tab':                         'btn_open_full_page',
+    '#btn-clear-all':                        'btn_clear_history',
+    '#btn-bulk-erase':                       'bulk_remove',
+    '#btn-load-more':                        'btn_load_more',
+    '#empty-message':                        'empty_title',
+    '.empty-sub':                            'empty_subtitle',
+    '#loading-state span':                   'loading',
+    '.sort-popover-header':                  'sort_by',
+    '.ext-popover-header':                   'file_type',
+    '#btn-apply-range':                      'date_apply_range',
+    '[data-date-opt="all"]':                 'date_to_date',
+    '[data-date-opt="today"]':               'date_today',
+    '[data-date-opt="yesterday"]':           'date_yesterday',
+    '.date-range-label[for="date-from"]':    'date_from',
+    '.date-range-label[for="date-to"]':      'date_to',
+  };
+  const attrMap = {
+    '#search-input': { placeholder: 'search_placeholder', 'aria-label': 'search_placeholder' },
+  };
+
+  for (const [sel, key] of Object.entries(textMap)) {
+    const node = $(sel);
+    if (node) {
+      // For buttons with SVG + text, only replace text nodes
+      const textNodes = [...node.childNodes].filter(n => n.nodeType === Node.TEXT_NODE);
+      if (textNodes.length) {
+        // Find the text node with actual content
+        const tn = textNodes.find(n => n.textContent.trim()) || textNodes[0];
+        if (tn) tn.textContent = tn.textContent.replace(tn.textContent.trim(), msg(key));
+      } else if (!node.querySelector('svg')) {
+        node.textContent = msg(key);
+      }
+    }
+  }
+  for (const [sel, attrs] of Object.entries(attrMap)) {
+    const node = $(sel);
+    if (node) {
+      for (const [attr, key] of Object.entries(attrs)) {
+        node.setAttribute(attr, msg(key));
+      }
+    }
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────────────────
    Init
    ───────────────────────────────────────────────────────────────────────── */
 async function init() {
-  wire();
-  bindChrome();
-
+  /* Fix #4: Validate DOM roots first — before any listener binding */
   const requiredRoots = ['#downloads-list', '#scroll-area', '#topbar', '#sidebar'];
   const missingRoots = requiredRoots.filter(sel => !$(sel));
   if (missingRoots.length) {
     throw new Error(`Missing required UI nodes: ${missingRoots.join(', ')}`);
   }
+
+  i18nDom(); /* Fix #22: Localize static HTML text */
+  wire();
+  bindChrome();
   await restoreTheme();
   await restorePrefs();
   syncControls();
@@ -2138,7 +2472,7 @@ document.addEventListener('DOMContentLoaded', () => {
     state.isLoading = false;
     toggleClass('#loading-state', 'hidden', true);
     toggleClass('#empty-state', 'hidden', false);
-    setText('#empty-message', 'Could not load downloads');
+    setText('#empty-message', msg('loading_error'));
     toast(err?.message || 'Initialization failed.', 'error');
     console.error('[Downloads Manager]', err);
   });

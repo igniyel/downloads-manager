@@ -1,0 +1,452 @@
+{
+  "ext_name": {
+    "message": "Downloads Manager"
+  },
+  "ext_description": {
+    "message": "Minimal liquid-glass based modern downloads manager for chromium browsers."
+  },
+  "open_downloads_manager": {
+    "message": "Open Downloads Manager"
+  },
+  "sidebar_title": {
+    "message": "Downloads"
+  },
+  "filter_all": {
+    "message": "All files"
+  },
+  "filter_complete": {
+    "message": "Complete"
+  },
+  "filter_in_progress": {
+    "message": "In progress"
+  },
+  "filter_failed": {
+    "message": "Failed"
+  },
+  "filter_missing": {
+    "message": "Missing"
+  },
+  "stat_visible": {
+    "message": "Visible"
+  },
+  "stat_selected": {
+    "message": "Selected"
+  },
+  "stat_active": {
+    "message": "Active"
+  },
+  "stat_on_disk": {
+    "message": "On disk"
+  },
+  "search_placeholder": {
+    "message": "Search downloads…"
+  },
+  "sort_newest": {
+    "message": "Newest first"
+  },
+  "sort_oldest": {
+    "message": "Oldest first"
+  },
+  "sort_name_asc": {
+    "message": "Name A → Z"
+  },
+  "sort_name_desc": {
+    "message": "Name Z → A"
+  },
+  "sort_largest": {
+    "message": "Largest first"
+  },
+  "sort_smallest": {
+    "message": "Smallest first"
+  },
+  "sort_by": {
+    "message": "Sort by"
+  },
+  "file_type": {
+    "message": "File type"
+  },
+  "all_types": {
+    "message": "All types"
+  },
+  "date_to_date": {
+    "message": "To date"
+  },
+  "date_today": {
+    "message": "Today"
+  },
+  "date_yesterday": {
+    "message": "Yesterday"
+  },
+  "date_custom_range": {
+    "message": "Custom range"
+  },
+  "date_from": {
+    "message": "From"
+  },
+  "date_to": {
+    "message": "To"
+  },
+  "date_apply_range": {
+    "message": "Apply range"
+  },
+  "date_available_range": {
+    "message": "Available range: $FROM$ – $TO$",
+    "placeholders": {
+      "from": { "content": "$1" },
+      "to": { "content": "$2" }
+    }
+  },
+  "date_no_downloads": {
+    "message": "No dated downloads available yet."
+  },
+  "btn_open_full_page": {
+    "message": "Open full page"
+  },
+  "btn_clear_history": {
+    "message": "Clear history"
+  },
+  "btn_open": {
+    "message": "Open"
+  },
+  "btn_reveal": {
+    "message": "Reveal"
+  },
+  "btn_pause": {
+    "message": "Pause"
+  },
+  "btn_resume": {
+    "message": "Resume"
+  },
+  "btn_cancel": {
+    "message": "Cancel"
+  },
+  "btn_again": {
+    "message": "Again"
+  },
+  "btn_delete": {
+    "message": "Delete"
+  },
+  "btn_gone": {
+    "message": "Gone"
+  },
+  "btn_load_more": {
+    "message": "Load more"
+  },
+  "bulk_selected": {
+    "message": "$COUNT$ selected",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "bulk_remove": {
+    "message": "Remove"
+  },
+  "empty_title": {
+    "message": "No downloads yet"
+  },
+  "empty_subtitle": {
+    "message": "Downloaded files appear here automatically."
+  },
+  "empty_no_complete": {
+    "message": "No completed downloads"
+  },
+  "empty_no_active": {
+    "message": "No active downloads"
+  },
+  "empty_no_failed": {
+    "message": "No failed downloads"
+  },
+  "empty_no_missing": {
+    "message": "No missing files"
+  },
+  "empty_no_results": {
+    "message": "No results for \"$QUERY$\"",
+    "placeholders": {
+      "query": { "content": "$1" }
+    }
+  },
+  "loading": {
+    "message": "Loading downloads…"
+  },
+  "loading_error": {
+    "message": "Could not load downloads"
+  },
+  "n_downloads": {
+    "message": "$COUNT$ download$PLURAL$",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "plural": { "content": "$2" }
+    }
+  },
+  "n_more_available": {
+    "message": "$COUNT$ more available",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "time_just_now": {
+    "message": "Just now"
+  },
+  "time_yesterday": {
+    "message": "Yesterday"
+  },
+  "time_m_ago": {
+    "message": "$MINUTES$m ago",
+    "placeholders": {
+      "minutes": { "content": "$1" }
+    }
+  },
+  "time_h_ago": {
+    "message": "$HOURS$h ago",
+    "placeholders": {
+      "hours": { "content": "$1" }
+    }
+  },
+  "time_d_ago": {
+    "message": "$DAYS$d ago",
+    "placeholders": {
+      "days": { "content": "$1" }
+    }
+  },
+  "group_today": {
+    "message": "Today"
+  },
+  "group_yesterday": {
+    "message": "Yesterday"
+  },
+  "group_this_week": {
+    "message": "This week"
+  },
+  "group_this_month": {
+    "message": "This month"
+  },
+  "group_sorted_by_name": {
+    "message": "Sorted by name"
+  },
+  "group_sorted_by_size": {
+    "message": "Sorted by size"
+  },
+  "group_unknown_date": {
+    "message": "Unknown date"
+  },
+  "status_complete": {
+    "message": "Complete"
+  },
+  "status_missing": {
+    "message": "Missing"
+  },
+  "status_paused": {
+    "message": "Paused"
+  },
+  "status_downloading": {
+    "message": "Downloading"
+  },
+  "status_unknown": {
+    "message": "Unknown"
+  },
+  "interrupt_no_space": {
+    "message": "No disk space"
+  },
+  "interrupt_write_failed": {
+    "message": "Write failed"
+  },
+  "interrupt_name_too_long": {
+    "message": "Filename too long"
+  },
+  "interrupt_network": {
+    "message": "Network error"
+  },
+  "interrupt_timeout": {
+    "message": "Timed out"
+  },
+  "interrupt_disconnected": {
+    "message": "Disconnected"
+  },
+  "interrupt_bad_content": {
+    "message": "Bad response"
+  },
+  "interrupt_unauthorized": {
+    "message": "Unauthorized"
+  },
+  "interrupt_forbidden": {
+    "message": "Forbidden"
+  },
+  "interrupt_cancelled": {
+    "message": "Cancelled"
+  },
+  "interrupt_crash": {
+    "message": "Browser crash"
+  },
+  "toast_refreshed": {
+    "message": "Refreshed."
+  },
+  "toast_paused": {
+    "message": "Paused."
+  },
+  "toast_resumed": {
+    "message": "Resumed."
+  },
+  "toast_cancelled": {
+    "message": "Download cancelled."
+  },
+  "toast_download_started": {
+    "message": "Download started."
+  },
+  "toast_no_source_url": {
+    "message": "No source URL."
+  },
+  "toast_url_copied": {
+    "message": "URL copied."
+  },
+  "toast_path_copied": {
+    "message": "Path copied."
+  },
+  "toast_filename_copied": {
+    "message": "Filename copied."
+  },
+  "toast_clipboard_failed": {
+    "message": "Clipboard failed."
+  },
+  "toast_history_cleared": {
+    "message": "History cleared."
+  },
+  "toast_removed_history": {
+    "message": "Removed from history."
+  },
+  "toast_no_eligible": {
+    "message": "No eligible items."
+  },
+  "toast_file_already_missing": {
+    "message": "File was already missing."
+  },
+  "toast_delete_kept_history": {
+    "message": "File could not be deleted — history record kept."
+  },
+  "toast_could_not_open_tab": {
+    "message": "Could not open tab."
+  },
+  "modal_cancel_download": {
+    "message": "Cancel download?"
+  },
+  "modal_cancel_confirm": {
+    "message": "Cancel download"
+  },
+  "modal_cancel_body": {
+    "message": "\"$NAME$\" will stop and any partial file removed.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "modal_delete_title": {
+    "message": "Delete file from disk?"
+  },
+  "modal_delete_body": {
+    "message": "\"$NAME$\" will be permanently removed. History record stays.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "modal_delete_confirm": {
+    "message": "Delete file"
+  },
+  "modal_erase_title": {
+    "message": "Remove from history?"
+  },
+  "modal_erase_body": {
+    "message": "\"$NAME$\" removed from history. File on disk untouched.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "modal_erase_confirm": {
+    "message": "Remove"
+  },
+  "modal_delete_erase_title": {
+    "message": "Delete + remove history?"
+  },
+  "modal_delete_erase_body": {
+    "message": "\"$NAME$\" will be deleted from disk and removed from history.",
+    "placeholders": { "name": { "content": "$1" } }
+  },
+  "modal_delete_erase_confirm": {
+    "message": "Delete + remove"
+  },
+  "modal_bulk_delete_title": {
+    "message": "Delete + remove $COUNT$ item$PLURAL$?",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "plural": { "content": "$2" }
+    }
+  },
+  "modal_bulk_delete_body": {
+    "message": "Files will be deleted from disk and removed from history."
+  },
+  "modal_bulk_erase_title": {
+    "message": "Remove $COUNT$ from history?",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "modal_bulk_erase_body": {
+    "message": "Files on disk are untouched."
+  },
+  "modal_clear_all_title": {
+    "message": "Clear all download history?"
+  },
+  "modal_clear_all_body": {
+    "message": "All $COUNT$ records removed. Files on disk unaffected.",
+    "placeholders": { "count": { "content": "$1" } }
+  },
+  "modal_clear_all_confirm": {
+    "message": "Clear history"
+  },
+  "modal_download_again_title": {
+    "message": "Download again?"
+  },
+  "modal_download_again_body": {
+    "message": "This will re-download from the original URL. Signed or expiring links may no longer work."
+  },
+  "modal_download_again_confirm": {
+    "message": "Download"
+  },
+  "ctx_open_file": {
+    "message": "Open file"
+  },
+  "ctx_reveal_folder": {
+    "message": "Reveal in folder"
+  },
+  "ctx_cancel_download": {
+    "message": "Cancel download"
+  },
+  "ctx_download_again": {
+    "message": "Download again"
+  },
+  "ctx_delete_from_disk": {
+    "message": "Delete file from disk"
+  },
+  "ctx_delete_and_erase": {
+    "message": "Delete + remove history"
+  },
+  "ctx_remove_history": {
+    "message": "Remove from history"
+  },
+  "ctx_copy_url": {
+    "message": "Copy URL"
+  },
+  "ctx_copy_path": {
+    "message": "Copy file path"
+  },
+  "ctx_copy_filename": {
+    "message": "Copy filename"
+  },
+  "no_source_url": {
+    "message": "No source URL"
+  },
+  "path_unavailable": {
+    "message": "Path unavailable"
+  },
+  "theme_automatic": {
+    "message": "Automatic"
+  },
+  "theme_beige": {
+    "message": "Beige"
+  },
+  "theme_dark": {
+    "message": "Dark"
+  },
+  "theme_midnight": {
+    "message": "Midnight"
+  }
+}

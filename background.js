@@ -3,6 +3,13 @@
 const APP_PAGE = 'downloads.html?surface=tab';
 const MENU_ID  = 'open-downloads-manager';
 
+/* Fix #12: Allowed message types — strict schema for the message router */
+const VALID_MESSAGE_TYPES = new Set([
+  'downloads-manager:open-tab',
+  'downloads-manager:open-panel',
+  'downloads-manager:get-capabilities',
+]);
+
 async function ensureContextMenu() {
   if (!chrome.contextMenus?.create) return;
   try { await chrome.contextMenus.remove(MENU_ID); } catch { /* item may not exist yet */ }
@@ -15,6 +22,15 @@ async function configureSidePanel() {
   if (!chrome.sidePanel?.setPanelBehavior) return;
   try { await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }); }
   catch (e) { console.warn('[Downloads Manager] Side panel behavior:', e); }
+}
+
+/* Fix #13: Debounced badge update — collapses rapid create/change/erase events */
+let badgeTimer = null;
+const BADGE_DEBOUNCE_MS = 250;
+
+function scheduleBadgeUpdate() {
+  if (badgeTimer != null) clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(() => { badgeTimer = null; updateBadge(); }, BADGE_DEBOUNCE_MS);
 }
 
 async function updateBadge() {
@@ -59,10 +75,10 @@ chrome.runtime.onStartup?.addListener(() => {
 // arriving during a cold wake doesn't race against setup.
 const swReady = initialize().catch(e => console.warn('[Downloads Manager] wake-init:', e));
 
-/* Live badge updates */
-chrome.downloads.onCreated.addListener(updateBadge);
-chrome.downloads.onChanged.addListener(updateBadge);
-chrome.downloads.onErased.addListener(updateBadge);
+/* Fix #13: Live badge updates — debounced */
+chrome.downloads.onCreated.addListener(scheduleBadgeUpdate);
+chrome.downloads.onChanged.addListener(scheduleBadgeUpdate);
+chrome.downloads.onErased.addListener(scheduleBadgeUpdate);
 
 /* Context menu */
 chrome.contextMenus?.onClicked?.addListener((info, tab) => {
@@ -84,17 +100,31 @@ chrome.commands?.onCommand?.addListener(async command => {
   void openManager({ windowId: tab?.windowId, preferPanel: true });
 });
 
+/* Fix #12: Validate message shape and sender origin */
+function isValidMessage(message, sender) {
+  if (!message || typeof message !== 'object') return false;
+  if (typeof message.type !== 'string') return false;
+  if (!VALID_MESSAGE_TYPES.has(message.type)) return false;
+  if (sender.id !== chrome.runtime.id) return false;
+  return true;
+}
+
 /* Message router */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  /* Fix #12: Reject malformed or external messages early */
+  if (!isValidMessage(message, sender)) {
+    sendResponse({ ok: false, reason: 'invalid_message' });
+    return false;
+  }
+
   (async () => {
-    // Wait for the SW to finish its wake-up initialization before handling
-    // messages. This prevents a race where a message from downloads.html
-    // arrives while the SW is still cold-starting.
     await swReady;
-    switch (message?.type) {
+    switch (message.type) {
+      /* Fix #2: Route through openManager() for tab deduplication */
       case 'downloads-manager:open-tab': {
-        const tab = await chrome.tabs.create({ url: chrome.runtime.getURL(APP_PAGE) });
-        sendResponse({ ok: true, tabId: tab.id });
+        const wid = sender.tab?.windowId ?? undefined;
+        await openManager({ windowId: wid, preferPanel: false });
+        sendResponse({ ok: true });
         break;
       }
       case 'downloads-manager:open-panel': {

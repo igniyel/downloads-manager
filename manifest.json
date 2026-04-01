@@ -2,18 +2,21 @@
   "manifest_version": 3,
   "name": "Downloads Manager",
   "short_name": "Downloads",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Minimal liquid-glass based modern downloads manager for chromium browsers.",
+  "default_locale": "en",
   "minimum_chrome_version": "116",
   "incognito": "split",
   "permissions": [
     "downloads",
     "downloads.open",
-    "clipboardWrite",
     "storage",
     "sidePanel",
     "contextMenus"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none';"
+  },
   "background": {
     "service_worker": "background.js"
   },
