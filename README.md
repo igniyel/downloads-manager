@@ -2,7 +2,7 @@
 
 > A modern downloads manager for Chromium with live progress tracking, smart filters, theme support, side panel access, and keyboard shortcuts.
 
-![Version](https://img.shields.io/badge/version-3.1.0-4a9eff?style=flat-square)
+![Version](https://img.shields.io/badge/version-3.2.0-4a9eff?style=flat-square)
 ![Manifest](https://img.shields.io/badge/manifest-v3-7c5cfc?style=flat-square)
 ![Chrome](https://img.shields.io/badge/chrome-116%2B-34d399?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-fbbf24?style=flat-square)
@@ -49,7 +49,7 @@ It is designed to remain lightweight, with bundled assets and no external runtim
 
 ### Appearance and usability
 
-- **Light**, **Dark**, and **Auto** theme modes
+- **Light**, **Midnight**, **Dark**, and **Auto** theme modes
 - Theme preference stored locally
 - Side panel workflow with full-page fallback
 - Keyboard shortcut support
@@ -59,10 +59,11 @@ It is designed to remain lightweight, with bundled assets and no external runtim
 
 ## Theme Support
 
-The extension supports three theme modes:
+The extension supports four theme modes:
 
-- **Auto**: follows the system color scheme
-- **Light**: always uses the light palette
+- **Auto**: follows the cool light color palette
+- **Light**: always uses the warm light palette
+- **Midnight**: always uses the deep navy color palette
 - **Dark**: always uses the dark palette
 
 Theme preference is stored locally and restored on startup.
@@ -153,6 +154,7 @@ The extension does not request host permissions.
 | Brave | Full support on compatible Chromium versions |
 | Chromium builds without Side Panel support | Tab fallback |
 | Firefox | Not supported |
+| Safari | Not supported |
 
 ---
 
@@ -167,6 +169,7 @@ downloads-manager/
 ├── downloads.js
 ├── fonts/
 └── icons/
+└── _locales/
 ```
 
 ### File reference
