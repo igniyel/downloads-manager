@@ -1,433 +1,465 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="auto" data-surface="panel">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="color-scheme" content="light">
-  <title>Downloads Manager</title>
-  <link rel="stylesheet" href="downloads.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <title>Downloads Manager</title>
+    <link rel="stylesheet" href="downloads.css">
 </head>
+
 <body>
-  <div id="app">
+    <div id="app">
 
-    <!-- ─── Sidebar ──────────────────────────────────────────── -->
-    <aside id="sidebar" aria-label="Download filters">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">
-          <svg class="logo-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M12 3v10" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
-            <path d="M8 10l4 4 4-4" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M4 19h16" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
-          </svg>
-          <span>Downloads</span>
-        </div>
-        <button id="btn-sidebar-close" class="glass-btn icon-btn sidebar-close-btn" type="button" aria-label="Close sidebar">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
+        <!-- ─── Sidebar ──────────────────────────────────────────── -->
+        <aside id="sidebar" aria-label="Download filters">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <svg class="logo-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M12 3v10" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" />
+                        <path d="M8 10l4 4 4-4" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M4 19h16" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" />
+                    </svg>
+                    <span>Downloads</span>
+                </div>
+                <button id="btn-sidebar-close" class="glass-btn icon-btn sidebar-close-btn" type="button" aria-label="Close sidebar">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" aria-hidden="true">
+                        <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
 
-      <nav id="filter-nav" aria-label="Filter downloads">
-        <button class="filter-tab active" data-filter="all" aria-pressed="true">
-          <span class="tab-icon" aria-hidden="true">
+            <nav id="filter-nav" aria-label="Filter downloads">
+                <button class="filter-tab active" data-filter="all" aria-pressed="true">
+                    <span class="tab-icon" aria-hidden="true">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
               <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
             </svg>
           </span>
-          <span class="tab-label">All files</span>
-          <span class="tab-count" id="count-all">0</span>
-        </button>
-        <button class="filter-tab" data-filter="complete" aria-pressed="false">
-          <span class="tab-icon" aria-hidden="true">
+                    <span class="tab-label">All files</span>
+                    <span class="tab-count" id="count-all">0</span>
+                </button>
+                <button class="filter-tab" data-filter="complete" aria-pressed="false">
+                    <span class="tab-icon" aria-hidden="true">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           </span>
-          <span class="tab-label">Complete</span>
-          <span class="tab-count" id="count-complete">0</span>
-        </button>
-        <button class="filter-tab" data-filter="in_progress" aria-pressed="false">
-          <span class="tab-icon" aria-hidden="true">
+                    <span class="tab-label">Complete</span>
+                    <span class="tab-count" id="count-complete">0</span>
+                </button>
+                <button class="filter-tab" data-filter="in_progress" aria-pressed="false">
+                    <span class="tab-icon" aria-hidden="true">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v10"/><path d="M8 10l4 4 4-4"/><path d="M4 19h16"/>
             </svg>
           </span>
-          <span class="tab-label">In progress</span>
-          <span class="tab-count" id="count-inprogress">0</span>
-        </button>
-        <button class="filter-tab" data-filter="failed" aria-pressed="false">
-          <span class="tab-icon" aria-hidden="true">
+                    <span class="tab-label">In progress</span>
+                    <span class="tab-count" id="count-inprogress">0</span>
+                </button>
+                <button class="filter-tab" data-filter="failed" aria-pressed="false">
+                    <span class="tab-icon" aria-hidden="true">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
               <path d="M18 6 6 18M6 6l12 12"/>
             </svg>
           </span>
-          <span class="tab-label">Failed</span>
-          <span class="tab-count" id="count-failed">0</span>
-        </button>
-        <button class="filter-tab" data-filter="missing" aria-pressed="false">
-          <span class="tab-icon" aria-hidden="true">
+                    <span class="tab-label">Failed</span>
+                    <span class="tab-count" id="count-failed">0</span>
+                </button>
+                <button class="filter-tab" data-filter="missing" aria-pressed="false">
+                    <span class="tab-icon" aria-hidden="true">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
           </span>
-          <span class="tab-label">Missing</span>
-          <span class="tab-count" id="count-missing">0</span>
-        </button>
-      </nav>
+                    <span class="tab-label">Missing</span>
+                    <span class="tab-count" id="count-missing">0</span>
+                </button>
+            </nav>
 
-      <div class="stat-grid">
-        <div class="stat-tile">
-          <span class="stat-label">Visible</span>
-          <span class="stat-value" id="visible-count">0</span>
-        </div>
-        <div class="stat-tile">
-          <span class="stat-label">Selected</span>
-          <span class="stat-value" id="selected-total">0</span>
-        </div>
-        <div class="stat-tile">
-          <span class="stat-label">Active</span>
-          <span class="stat-value accent" id="active-count">—</span>
-        </div>
-        <div class="stat-tile">
-          <span class="stat-label">On disk</span>
-          <span class="stat-value" id="total-size">—</span>
-        </div>
-      </div>
+            <div class="stat-grid">
+                <div class="stat-tile">
+                    <span class="stat-label">Visible</span>
+                    <span class="stat-value" id="visible-count">0</span>
+                </div>
+                <div class="stat-tile">
+                    <span class="stat-label">Selected</span>
+                    <span class="stat-value" id="selected-total">0</span>
+                </div>
+                <div class="stat-tile">
+                    <span class="stat-label">Active</span>
+                    <span class="stat-value accent" id="active-count">—</span>
+                </div>
+                <div class="stat-tile">
+                    <span class="stat-label">On disk</span>
+                    <span class="stat-value" id="total-size">—</span>
+                </div>
+            </div>
 
-      <div class="sidebar-footer">
-        <!-- Theme picker — 4-mode segmented control -->
-        <div class="theme-picker" role="group" aria-label="Color theme">
-          <button class="theme-pick-btn" type="button" data-theme-option="light"
-            aria-pressed="false" title="Beige">
-            <!-- Beige / filled sun -->
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="5"/>
-              <path d="M12 1v3M12 20v3M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h3M20 12h3M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
-          </button>
-          <button class="theme-pick-btn" type="button" data-theme-option="auto"
-            aria-pressed="true" title="Automatic (light)">
-            <!-- Auto / sun-rays -->
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="4"/>
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-            </svg>
-          </button>
-          <button class="theme-pick-btn" type="button" data-theme-option="midnight"
-            aria-pressed="false" title="Midnight">
-            <!-- Midnight / crescent + stars -->
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              <circle cx="19.5" cy="3.5" r="1.1" fill="currentColor" stroke="none"/>
-              <circle cx="16.5" cy="1.5" r=".75" fill="currentColor" stroke="none"/>
-            </svg>
-          </button>
-          <button class="theme-pick-btn" type="button" data-theme-option="dark"
-            aria-pressed="false" title="Dark">
-            <!-- Dark / crescent moon -->
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-          </button>
-        </div>
-        <!-- <span class="theme-label" id="theme-label-text">Automatic</span> -->
+            <div class="sidebar-footer">
+                <!-- Theme picker — 4-mode segmented control -->
+                <div class="theme-picker" role="group" aria-label="Color theme">
+                    <button class="theme-pick-btn" type="button" data-theme-option="light" aria-pressed="false" title="Beige">
+                        <!-- Beige / filled sun -->
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="5" />
+                            <path d="M12 1v3M12 20v3M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h3M20 12h3M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                        </svg>
+                    </button>
+                    <button class="theme-pick-btn" type="button" data-theme-option="auto" aria-pressed="true" title="Automatic (light)">
+                        <!-- Auto / sun-rays -->
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4" />
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                        </svg>
+                    </button>
+                    <button class="theme-pick-btn" type="button" data-theme-option="midnight" aria-pressed="false" title="Midnight">
+                        <!-- Midnight / crescent + stars -->
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                            <circle cx="19.5" cy="3.5" r="1.1" fill="currentColor" stroke="none" />
+                            <circle cx="16.5" cy="1.5" r=".75" fill="currentColor" stroke="none" />
+                        </svg>
+                    </button>
+                    <button class="theme-pick-btn" type="button" data-theme-option="dark" aria-pressed="false" title="Dark">
+                        <!-- Dark / crescent moon -->
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- <span class="theme-label" id="theme-label-text">Automatic</span> -->
 
-        <button id="btn-open-tab" class="glass-btn sidebar-action" type="button">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-            <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-          </svg>
-          Open full page
-        </button>
-        <button id="btn-clear-all" class="glass-btn sidebar-action sidebar-danger" type="button">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-          Clear history
-        </button>
-      </div>
-    </aside>
+                <button id="btn-open-tab" class="glass-btn sidebar-action" type="button">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                    Open full page
+                </button>
+                <button id="btn-clear-all" class="glass-btn sidebar-action sidebar-danger" type="button">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
+                    Clear history
+                </button>
+            </div>
+        </aside>
 
-    <!-- ─── Main area ─────────────────────────────────────────── -->
-    <section id="main-area">
+        <!-- ─── Main area ─────────────────────────────────────────── -->
+        <section id="main-area">
 
-      <header id="topbar">
-        <div class="topbar-row">
-          <button id="btn-sidebar-toggle" class="glass-btn icon-btn" type="button"
-            aria-label="Toggle sidebar" aria-expanded="true" title="Toggle sidebar (Alt+S)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
-              <line x1="3" y1="6"  x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
+            <header id="topbar">
+                <div class="topbar-row">
+                    <button id="btn-sidebar-toggle" class="glass-btn icon-btn" type="button" aria-label="Toggle sidebar" aria-expanded="true" title="Toggle sidebar (Alt+S)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                            <line x1="3" y1="6" x2="21" y2="6" />
+                            <line x1="3" y1="12" x2="21" y2="12" />
+                            <line x1="3" y1="18" x2="21" y2="18" />
+                        </svg>
+                    </button>
 
-          <div class="topbar-sep" aria-hidden="true"></div>
+                    <div class="topbar-sep" aria-hidden="true"></div>
 
-          <div class="search-box" role="search">
-            <span class="search-icon" aria-hidden="true">
+                    <div class="search-box" role="search">
+                        <span class="search-icon" aria-hidden="true">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
             </span>
-            <input type="search" id="search-input" placeholder="Search downloads…"
-              autocomplete="off" spellcheck="false"
-              aria-label="Search downloads" aria-describedby="results-summary">
-            <span id="results-summary" class="sr-only" aria-live="polite">Loading downloads…</span>
-            <button id="btn-clear-search" class="clear-btn hidden" type="button" aria-label="Clear search">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-                <path d="M18 6 6 18M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
+                        <input type="search" id="search-input" placeholder="Search downloads…" autocomplete="off" spellcheck="false" aria-label="Search downloads" aria-describedby="results-summary">
+                        <span id="results-summary" class="sr-only" aria-live="polite">Loading downloads…</span>
+                        <button id="btn-clear-search" class="clear-btn hidden" type="button" aria-label="Clear search">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                                <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
-          <div class="topbar-actions">
-            <div class="sort-filter-group" id="sort-filter-wrap">
-              <button id="btn-sort" class="glass-btn sort-filter-btn" type="button"
-                aria-haspopup="true" aria-expanded="false" aria-label="Sort downloads">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <line x1="3" y1="6" x2="21" y2="6"/>
-                  <line x1="6" y1="12" x2="18" y2="12"/>
-                  <line x1="9" y1="18" x2="15" y2="18"/>
-                </svg>
-                <span id="sort-label">Newest first</span>
-                <svg class="sort-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
-              </button>
- 
-              <div id="sort-popover" class="sort-popover hidden" role="menu" aria-label="Sort options">
-                <div class="sort-popover-header">Sort by</div>
- 
-                <button class="sort-opt active" data-sort="date-desc" role="menuitem" type="button">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M3 12h12M3 18h6"/>
-                    <polyline points="17 14 19 16 21 14"/>
-                    <line x1="19" y1="8" x2="19" y2="16"/>
-                  </svg>
-                  Newest first
-                  <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </button>
- 
-                <button class="sort-opt" data-sort="date-asc" role="menuitem" type="button">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M3 12h12M3 18h6"/>
-                    <polyline points="21 10 19 8 17 10"/>
-                    <line x1="19" y1="8" x2="19" y2="16"/>
-                  </svg>
-                  Oldest first
-                  <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </button>
- 
-                <div class="sort-opt-sep"></div>
- 
-                <button class="sort-opt" data-sort="name-asc" role="menuitem" type="button">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M3 12h12M3 18h6"/>
-                    <text x="16" y="18" font-size="8" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">A</text>
-                  </svg>
-                  Name A → Z
-                  <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </button>
- 
-                <button class="sort-opt" data-sort="name-desc" role="menuitem" type="button">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M3 12h12M3 18h6"/>
-                    <text x="16" y="18" font-size="8" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">Z</text>
-                  </svg>
-                  Name Z → A
-                  <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </button>
- 
-                <div class="sort-opt-sep"></div>
- 
-                <button class="sort-opt" data-sort="size-desc" role="menuitem" type="button">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M3 12h14M3 18h8"/>
-                    <polyline points="17 14 19 16 21 14"/>
-                    <line x1="19" y1="8" x2="19" y2="16"/>
-                  </svg>
-                  Largest first
-                  <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </button>
- 
-                <button class="sort-opt" data-sort="size-asc" role="menuitem" type="button">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M3 6h18M3 12h14M3 18h8"/>
-                    <polyline points="21 10 19 8 17 10"/>
-                    <line x1="19" y1="8" x2="19" y2="16"/>
-                  </svg>
-                  Smallest first
-                  <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <button id="btn-refresh" class="glass-btn icon-btn" type="button" aria-label="Refresh" title="Refresh (F5)">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M21 12a9 9 0 1 1-3.01-6.73"/><path d="M21 4v6h-6"/>
-              </svg>
-            </button>
-          </div>
-        </div>
+                    <div class="topbar-actions">
+                        <div class="sort-filter-group" id="sort-filter-wrap">
+                            <button id="btn-sort" class="glass-btn sort-filter-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Sort downloads">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="3" y1="6" x2="21" y2="6" />
+                                    <line x1="6" y1="12" x2="18" y2="12" />
+                                    <line x1="9" y1="18" x2="15" y2="18" />
+                                </svg>
+                                <span id="sort-label">Newest first</span>
+                                <svg class="sort-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </button>
 
-        <div class="topbar-status">
-          <div class="date-filter-group" id="date-filter-wrap">
-            <button id="btn-date-filter" class="glass-btn date-filter-btn" type="button" aria-haspopup="true" aria-expanded="false">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-              <span id="date-filter-label">To date</span>
-              <svg class="date-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <button id="btn-clear-date" class="clear-date-btn hidden" type="button" aria-label="Clear date filter">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
+                            <div id="sort-popover" class="sort-popover hidden" role="menu" aria-label="Sort options">
+                                <div class="sort-popover-header">Sort by</div>
 
-            <div id="date-popover" class="date-popover hidden" role="dialog" aria-label="Date filter options">
-              <button class="date-opt active" data-date-opt="all" type="button">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-                To date
-              </button>
-              <button class="date-opt" data-date-opt="today" type="button">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none"/></svg>
-                Today
-              </button>
-              <button class="date-opt" data-date-opt="yesterday" type="button">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="16" x2="15" y2="16" stroke-width="2"/></svg>
-                Yesterday
-              </button>
-              <div class="date-opt-sep"></div>
-              <div class="date-range-fields" aria-label="Custom date range">
-                <div class="date-range-field">
-                  <label class="date-range-label" for="date-from">From</label>
-                  <input type="date" id="date-from" class="date-range-input" aria-label="From date">
+                                <button class="sort-opt active" data-sort="date-desc" role="menuitem" type="button">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18M3 12h12M3 18h6" />
+                                        <polyline points="17 14 19 16 21 14" />
+                                        <line x1="19" y1="8" x2="19" y2="16" />
+                                    </svg>
+                                    Newest first
+                                    <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </button>
+
+                                <button class="sort-opt" data-sort="date-asc" role="menuitem" type="button">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18M3 12h12M3 18h6" />
+                                        <polyline points="21 10 19 8 17 10" />
+                                        <line x1="19" y1="8" x2="19" y2="16" />
+                                    </svg>
+                                    Oldest first
+                                    <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </button>
+
+                                <div class="sort-opt-sep"></div>
+
+                                <button class="sort-opt" data-sort="name-asc" role="menuitem" type="button">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18M3 12h12M3 18h6" />
+                                        <text x="16" y="18" font-size="8" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">A</text>
+                                    </svg>
+                                    Name A → Z
+                                    <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </button>
+
+                                <button class="sort-opt" data-sort="name-desc" role="menuitem" type="button">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18M3 12h12M3 18h6" />
+                                        <text x="16" y="18" font-size="8" fill="currentColor" stroke="none" font-family="sans-serif" font-weight="700">Z</text>
+                                    </svg>
+                                    Name Z → A
+                                    <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </button>
+
+                                <div class="sort-opt-sep"></div>
+
+                                <button class="sort-opt" data-sort="size-desc" role="menuitem" type="button">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18M3 12h14M3 18h8" />
+                                        <polyline points="17 14 19 16 21 14" />
+                                        <line x1="19" y1="8" x2="19" y2="16" />
+                                    </svg>
+                                    Largest first
+                                    <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </button>
+
+                                <button class="sort-opt" data-sort="size-asc" role="menuitem" type="button">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M3 6h18M3 12h14M3 18h8" />
+                                        <polyline points="21 10 19 8 17 10" />
+                                        <line x1="19" y1="8" x2="19" y2="16" />
+                                    </svg>
+                                    Smallest first
+                                    <svg class="sort-opt-check" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button id="btn-refresh" class="glass-btn icon-btn" type="button" aria-label="Refresh" title="Refresh (F5)">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 12a9 9 0 1 1-3.01-6.73" />
+                                <path d="M21 4v6h-6" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="date-range-field">
-                  <label class="date-range-label" for="date-to">To</label>
-                  <input type="date" id="date-to" class="date-range-input" aria-label="To date">
+
+                <div class="topbar-status">
+                    <div class="date-filter-group" id="date-filter-wrap">
+                        <button id="btn-date-filter" class="glass-btn date-filter-btn" type="button" aria-haspopup="true" aria-expanded="false">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="4" width="18" height="18" rx="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            <span id="date-filter-label">To date</span>
+                            <svg class="date-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+                        <button id="btn-clear-date" class="clear-date-btn hidden" type="button" aria-label="Clear date filter">
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true">
+                                <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <div id="date-popover" class="date-popover hidden" role="dialog" aria-label="Date filter options">
+                            <button class="date-opt active" data-date-opt="all" type="button">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="9" />
+                                    <polyline points="12 7 12 12 15 15" />
+                                </svg>
+                                To date
+                            </button>
+                            <button class="date-opt" data-date-opt="today" type="button">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                    <circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none" />
+                                </svg>
+                                Today
+                            </button>
+                            <button class="date-opt" data-date-opt="yesterday" type="button">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                    <line x1="9" y1="16" x2="15" y2="16" stroke-width="2" />
+                                </svg>
+                                Yesterday
+                            </button>
+                            <div class="date-opt-sep"></div>
+                            <div class="date-range-fields" aria-label="Custom date range">
+                                <div class="date-range-field">
+                                    <label class="date-range-label" for="date-from">From</label>
+                                    <input type="date" id="date-from" class="date-range-input" aria-label="From date">
+                                </div>
+                                <div class="date-range-field">
+                                    <label class="date-range-label" for="date-to">To</label>
+                                    <input type="date" id="date-to" class="date-range-input" aria-label="To date">
+                                </div>
+                            </div>
+                            <p id="date-range-hint" class="date-range-hint" aria-live="polite">Available range: —</p>
+                            <button id="btn-apply-range" class="glass-btn apply-range-btn" type="button">Apply range</button>
+                        </div>
+                    </div>
+
+                    <span class="status-sep" aria-hidden="true"></span>
+
+                    <div class="ext-filter-group" id="ext-filter-wrap">
+                        <button id="btn-ext-filter" class="glass-btn ext-filter-btn" type="button" aria-haspopup="true" aria-expanded="false">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                            </svg>
+                            <span id="ext-filter-label">All types</span>
+                            <svg class="ext-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="6 9 12 15 18 9" />
+                            </svg>
+                        </button>
+                        <button id="btn-clear-ext" class="clear-date-btn hidden" type="button" aria-label="Clear type filter">
+                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true">
+                                <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                        </button>
+                        <div id="ext-popover" class="ext-popover hidden" role="dialog" aria-label="Filter by file type">
+                            <div class="ext-popover-header">File type</div>
+                            <div id="ext-chip-list" class="ext-chip-list"></div>
+                        </div>
+                    </div>
+
+                    <span id="visible-count-bar" class="visible-count-bar" aria-live="polite">0 downloads</span>
                 </div>
-              </div>
-              <p id="date-range-hint" class="date-range-hint" aria-live="polite">Available range: —</p>
-              <button id="btn-apply-range" class="glass-btn apply-range-btn" type="button">Apply range</button>
-            </div>
-          </div>
+            </header>
 
-          <span class="status-sep" aria-hidden="true"></span>
+            <section id="bulk-toolbar" class="hidden" role="toolbar" aria-label="Bulk actions">
+                <label class="select-all-wrap">
+                    <input type="checkbox" id="select-all" aria-label="Select all visible">
+                    <span id="selected-count" aria-live="polite">0 selected</span>
+                    <span id="selected-size" class="selected-size"></span>
+                </label>
+                <div id="bulk-progress" class="bulk-progress hidden" aria-live="polite">
+                    <div class="bulk-progress-track">
+                        <div id="bulk-progress-fill" class="bulk-progress-fill"></div>
+                    </div>
+                    <span id="bulk-progress-text" class="bulk-progress-text"></span>
+                    <button id="btn-bulk-abort" class="glass-btn bulk-btn ghost-btn bulk-abort-btn" type="button" title="Stop">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+                            <rect x="4" y="4" width="16" height="16" rx="2" />
+                        </svg>
+                        Stop
+                    </button>
+                </div>
+                <div id="bulk-actions" class="bulk-actions">
+                    <button id="btn-bulk-delete" class="glass-btn bulk-btn danger-btn" type="button" title="Delete files from disk and remove from history">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <line x1="10" y1="11" x2="10" y2="17" />
+                            <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        Delete
+                    </button>
+                    <button id="btn-bulk-erase" class="glass-btn bulk-btn" type="button" title="Remove from history only — files on disk are untouched">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="9" y1="15" x2="15" y2="15" />
+                        </svg>
+                        Remove
+                    </button>
+                    <button id="btn-cancel-select" class="glass-btn bulk-btn ghost-btn" type="button">Deselect</button>
+                </div>
+            </section>
 
-          <div class="ext-filter-group" id="ext-filter-wrap">
-            <button id="btn-ext-filter" class="glass-btn ext-filter-btn" type="button"
-              aria-haspopup="true" aria-expanded="false">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-              </svg>
-              <span id="ext-filter-label">All types</span>
-              <svg class="ext-chevron" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
-            <button id="btn-clear-ext" class="clear-date-btn hidden" type="button" aria-label="Clear type filter">
-              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
-            <div id="ext-popover" class="ext-popover hidden" role="dialog" aria-label="Filter by file type">
-              <div class="ext-popover-header">File type</div>
-              <div id="ext-chip-list" class="ext-chip-list"></div>
-            </div>
-          </div>
+            <main id="scroll-area" tabindex="-1" aria-label="Downloads list">
+                <section id="loading-state" aria-live="polite">
+                    <div class="glass-spinner" aria-hidden="true"></div>
+                    <span>Loading downloads…</span>
+                </section>
 
-          <span id="visible-count-bar" class="visible-count-bar" aria-live="polite">0 downloads</span>
-        </div>
-      </header>
+                <section id="empty-state" class="hidden" aria-live="polite">
+                    <div class="empty-glyph" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3v10" />
+                            <path d="M8 10l4 4 4-4" />
+                            <path d="M4 19h16" />
+                        </svg>
+                    </div>
+                    <p id="empty-message">No downloads yet</p>
+                    <p class="empty-sub">Downloaded files appear here automatically.</p>
+                </section>
 
-      <section id="bulk-toolbar" class="hidden" role="toolbar" aria-label="Bulk actions">
-        <label class="select-all-wrap">
-          <input type="checkbox" id="select-all" aria-label="Select all visible">
-          <span id="selected-count" aria-live="polite">0 selected</span>
-        </label>
-        <div class="bulk-actions">
-          <button id="btn-bulk-delete" class="glass-btn bulk-btn danger-btn" type="button">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
-            </svg>
-            Delete
-          </button>
-          <button id="btn-bulk-erase" class="glass-btn bulk-btn" type="button">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="9" y1="15" x2="15" y2="15"/>
-            </svg>
-            Remove
-          </button>
-          <button id="btn-cancel-select" class="glass-btn bulk-btn ghost-btn" type="button">Cancel</button>
-        </div>
-      </section>
+                <div id="downloads-list" role="list" aria-label="Downloads"></div>
 
-      <main id="scroll-area" tabindex="-1" aria-label="Downloads list">
-        <section id="loading-state" aria-live="polite">
-          <div class="glass-spinner" aria-hidden="true"></div>
-          <span>Loading downloads…</span>
+                <footer id="results-footer" class="hidden">
+                    <p id="results-footer-text"></p>
+                    <button id="btn-load-more" class="glass-btn load-more-btn" type="button">Load more</button>
+                </footer>
+            </main>
         </section>
-
-        <section id="empty-state" class="hidden" aria-live="polite">
-          <div class="empty-glyph" aria-hidden="true">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3v10"/><path d="M8 10l4 4 4-4"/><path d="M4 19h16"/>
-            </svg>
-          </div>
-          <p id="empty-message">No downloads yet</p>
-          <p class="empty-sub">Downloaded files appear here automatically.</p>
-        </section>
-
-        <div id="downloads-list" role="list" aria-label="Downloads"></div>
-
-        <footer id="results-footer" class="hidden">
-          <p id="results-footer-text"></p>
-          <button id="btn-load-more" class="glass-btn load-more-btn" type="button">Load more</button>
-        </footer>
-      </main>
-    </section>
-  </div>
-
-  <div id="sidebar-overlay" class="hidden" aria-hidden="true"></div>
-
-  <div id="modal-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-body">
-    <div id="modal">
-      <div id="modal-icon" aria-hidden="true"></div>
-      <h2 id="modal-title"></h2>
-      <div id="modal-body"></div>
-      <div id="modal-footer">
-        <button id="modal-cancel"  class="glass-btn modal-btn ghost-btn"  type="button">Cancel</button>
-        <button id="modal-confirm" class="glass-btn modal-btn danger-btn" type="button">Confirm</button>
-      </div>
     </div>
-  </div>
 
-  <div id="context-menu" class="hidden" role="menu" aria-label="Download actions"></div>
-  <div id="toast-container" aria-live="polite" aria-atomic="false" aria-relevant="additions"></div>
+    <div id="sidebar-overlay" class="hidden" aria-hidden="true"></div>
 
-  <script src="downloads.js"></script>
+    <div id="modal-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-body">
+        <div id="modal">
+            <div id="modal-icon" aria-hidden="true"></div>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+            <div id="modal-footer">
+                <button id="modal-cancel" class="glass-btn modal-btn ghost-btn" type="button">Cancel</button>
+                <button id="modal-confirm" class="glass-btn modal-btn danger-btn" type="button">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="context-menu" class="hidden" role="menu" aria-label="Download actions"></div>
+    <div id="toast-container" aria-live="polite" aria-atomic="false" aria-relevant="additions"></div>
+
+    <script src="downloads.js"></script>
 </body>
+
 </html>
-
-

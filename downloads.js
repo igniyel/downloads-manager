@@ -4,39 +4,54 @@
    Constants
    ───────────────────────────────────────────────────────────────────────── */
 const INITIAL_RENDER_COUNT = 200;
-const RENDER_INCREMENT     = 200;
-const PREFS_KEY            = 'dlMgrPrefs_v4';
-const POLL_INTERVAL_MS     = 1000;
-const SPEED_WINDOW_MS      = 5000;
+const RENDER_INCREMENT = 200;
+const PREFS_KEY = 'dlMgrPrefs_v4';
+const POLL_INTERVAL_MS = 1000;
+const SPEED_WINDOW_MS = 5000;
 
 const SORT_FNS = {
   'date-desc': (a, b) => toTime(b.startTime) - toTime(a.startTime),
-  'date-asc':  (a, b) => toTime(a.startTime) - toTime(b.startTime),
-  'name-asc':  (a, b) => getFilename(a).localeCompare(getFilename(b), undefined, { sensitivity: 'base' }),
-  'name-desc': (a, b) => getFilename(b).localeCompare(getFilename(a), undefined, { sensitivity: 'base' }),
+  'date-asc': (a, b) => toTime(a.startTime) - toTime(b.startTime),
+  'name-asc': (a, b) => getFilename(a).localeCompare(getFilename(b), undefined, {
+    sensitivity: 'base'
+  }),
+  'name-desc': (a, b) => getFilename(b).localeCompare(getFilename(a), undefined, {
+    sensitivity: 'base'
+  }),
   'size-desc': (a, b) => getSize(b) - getSize(a),
-  'size-asc':  (a, b) => getSize(a) - getSize(b),
+  'size-asc': (a, b) => getSize(a) - getSize(b),
 };
 
-const DATE_GROUPS = [
-  { label: msg('group_today'),      test: (day, today) => day >= today },
-  { label: msg('group_yesterday'),  test: (day, today) => day >= shiftDay(today, -1) },
-  { label: msg('group_this_week'),  test: (day, today) => day >= shiftDay(today, -6) },
-  { label: msg('group_this_month'), test: (day, today) => day >= new Date(today.getFullYear(), today.getMonth(), 1) },
+const DATE_GROUPS = [{
+    label: msg('group_today'),
+    test: (day, today) => day >= today
+  },
+  {
+    label: msg('group_yesterday'),
+    test: (day, today) => day >= shiftDay(today, -1)
+  },
+  {
+    label: msg('group_this_week'),
+    test: (day, today) => day >= shiftDay(today, -6)
+  },
+  {
+    label: msg('group_this_month'),
+    test: (day, today) => day >= new Date(today.getFullYear(), today.getMonth(), 1)
+  },
 ];
 
 const INTERRUPT_LABELS = {
-  FILE_NO_SPACE:        msg('interrupt_no_space'),
-  FILE_FAILED:          msg('interrupt_write_failed'),
-  FILE_NAME_TOO_LONG:   msg('interrupt_name_too_long'),
-  NETWORK_FAILED:       msg('interrupt_network'),
-  NETWORK_TIMEOUT:      msg('interrupt_timeout'),
+  FILE_NO_SPACE: msg('interrupt_no_space'),
+  FILE_FAILED: msg('interrupt_write_failed'),
+  FILE_NAME_TOO_LONG: msg('interrupt_name_too_long'),
+  NETWORK_FAILED: msg('interrupt_network'),
+  NETWORK_TIMEOUT: msg('interrupt_timeout'),
   NETWORK_DISCONNECTED: msg('interrupt_disconnected'),
-  SERVER_BAD_CONTENT:   msg('interrupt_bad_content'),
-  SERVER_UNAUTHORIZED:  msg('interrupt_unauthorized'),
-  SERVER_FORBIDDEN:     msg('interrupt_forbidden'),
-  USER_CANCELED:        msg('interrupt_cancelled'),
-  CRASH:                msg('interrupt_crash'),
+  SERVER_BAD_CONTENT: msg('interrupt_bad_content'),
+  SERVER_UNAUTHORIZED: msg('interrupt_unauthorized'),
+  SERVER_FORBIDDEN: msg('interrupt_forbidden'),
+  USER_CANCELED: msg('interrupt_cancelled'),
+  CRASH: msg('interrupt_crash'),
 };
 
 /**
@@ -48,26 +63,29 @@ function msg(key, substitutions) {
   try {
     const val = chrome.i18n?.getMessage(key, substitutions);
     return val || key;
-  } catch { return key; }
+  } catch {
+    return key;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
    Button icon SVG registry
    ───────────────────────────────────────────────────────────────────────── */
 const BTN_ICONS = {
-  open:   `<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>`,
+  open: `<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>`,
   reveal: `<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>`,
   delete: `<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>`,
   cancel: `<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>`,
-  pause:  `<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>`,
+  pause: `<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>`,
   resume: `<polygon points="5 3 19 12 5 21 5 3"/>`,
-  again:  `<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>`,
-  more:   `<circle cx="12" cy="5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/>`,
+  again: `<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>`,
+  more: `<circle cx="12" cy="5"  r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/>`,
 };
 
 /** Build button innerHTML: SVG icon + optional text label */
 function btnIcon(key, text) {
-  const svg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${BTN_ICONS[key]}</svg>`;
+  const svg =
+    `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${BTN_ICONS[key]}</svg>`;
   return text ? `${svg}<span>${escapeHtml(text)}</span>` : svg;
 }
 
@@ -76,31 +94,36 @@ function btnIcon(key, text) {
    ───────────────────────────────────────────────────────────────────────── */
 const ICON_DEFS = {
   image: {
-    color: '#a78bfa', label: 'IMG',
+    color: '#a78bfa',
+    label: 'IMG',
     path: `<rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.6"/>
            <path d="M3 14l4-4 4 4 3-3 5 5" stroke-width="1.6" stroke-linejoin="round"/>
            <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none"/>`,
   },
   video: {
-    color: '#f87171', label: 'VID',
+    color: '#f87171',
+    label: 'VID',
     path: `<rect x="2" y="6" width="14" height="12" rx="2" stroke-width="1.6"/>
            <path d="M16 9.5l6-3v11l-6-3V9.5z" stroke-width="1.6" stroke-linejoin="round"/>`,
   },
   audio: {
-    color: '#34d399', label: 'AUD',
+    color: '#34d399',
+    label: 'AUD',
     path: `<path d="M9 18V5l12-2v13" stroke-width="1.6" stroke-linejoin="round"/>
            <circle cx="6" cy="18" r="3" stroke-width="1.6"/>
            <circle cx="18" cy="16" r="3" stroke-width="1.6"/>`,
   },
   pdf: {
-    color: '#f87171', label: 'PDF',
+    color: '#f87171',
+    label: 'PDF',
     path: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="1.6"/>
            <polyline points="14 2 14 8 20 8" stroke-width="1.6" stroke-linejoin="round"/>
            <line x1="7" y1="13" x2="17" y2="13" stroke-width="1.6"/>
            <line x1="7" y1="17" x2="13" y2="17" stroke-width="1.6"/>`,
   },
   doc: {
-    color: '#60a5fa', label: 'DOC',
+    color: '#60a5fa',
+    label: 'DOC',
     path: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="1.6"/>
            <polyline points="14 2 14 8 20 8" stroke-width="1.6" stroke-linejoin="round"/>
            <line x1="7" y1="13" x2="17" y2="13" stroke-width="1.6"/>
@@ -108,7 +131,8 @@ const ICON_DEFS = {
            <line x1="7" y1="9" x2="10" y2="9" stroke-width="1.6"/>`,
   },
   sheet: {
-    color: '#4ade80', label: 'XLS',
+    color: '#4ade80',
+    label: 'XLS',
     path: `<rect x="3" y="3" width="18" height="18" rx="2" stroke-width="1.6"/>
            <line x1="3" y1="9" x2="21" y2="9" stroke-width="1.4"/>
            <line x1="3" y1="15" x2="21" y2="15" stroke-width="1.4"/>
@@ -116,7 +140,8 @@ const ICON_DEFS = {
            <line x1="15" y1="3" x2="15" y2="21" stroke-width="1.4"/>`,
   },
   slide: {
-    color: '#fb923c', label: 'PPT',
+    color: '#fb923c',
+    label: 'PPT',
     path: `<rect x="2" y="4" width="20" height="14" rx="2" stroke-width="1.6"/>
            <line x1="8" y1="21" x2="16" y2="21" stroke-width="1.6"/>
            <line x1="12" y1="18" x2="12" y2="21" stroke-width="1.6"/>
@@ -124,7 +149,8 @@ const ICON_DEFS = {
            <line x1="7" y1="13" x2="13" y2="13" stroke-width="1.5"/>`,
   },
   archive: {
-    color: '#fbbf24', label: 'ZIP',
+    color: '#fbbf24',
+    label: 'ZIP',
     path: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="1.6"/>
            <polyline points="14 2 14 8 20 8" stroke-width="1.6" stroke-linejoin="round"/>
            <line x1="12" y1="9"  x2="12" y2="9.01"  stroke-width="2" stroke-linecap="round"/>
@@ -133,7 +159,8 @@ const ICON_DEFS = {
            <line x1="12" y1="18" x2="12" y2="18.01" stroke-width="2" stroke-linecap="round"/>`,
   },
   code: {
-    color: '#22d3ee', label: 'CODE',
+    color: '#22d3ee',
+    label: 'CODE',
     path: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="1.6"/>
            <polyline points="14 2 14 8 20 8" stroke-width="1.6" stroke-linejoin="round"/>
            <polyline points="9 13 7 15 9 17" stroke-width="1.6" stroke-linejoin="round"/>
@@ -141,7 +168,8 @@ const ICON_DEFS = {
            <line x1="12" y1="13" x2="12" y2="17" stroke-width="1.6"/>`,
   },
   exe: {
-    color: '#94a3b8', label: 'EXE',
+    color: '#94a3b8',
+    label: 'EXE',
     path: `<path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2z" stroke-width="1.6"/>
            <path d="M12 8v4" stroke-width="2" stroke-linecap="round"/>
            <path d="M8.46 10.46l2.83 2.83" stroke-width="1.8" stroke-linecap="round"/>
@@ -153,25 +181,29 @@ const ICON_DEFS = {
            <path d="M15.54 10.46l-2.83 2.83" stroke-width="1.8" stroke-linecap="round"/>`,
   },
   font: {
-    color: '#c084fc', label: 'FONT',
+    color: '#c084fc',
+    label: 'FONT',
     path: `<path d="M4 7V4h16v3" stroke-width="1.6" stroke-linejoin="round"/>
            <path d="M9 20h6" stroke-width="1.6" stroke-linecap="round"/>
            <line x1="12" y1="4" x2="12" y2="20" stroke-width="1.6"/>`,
   },
   disk: {
-    color: '#f472b6', label: 'DMG',
+    color: '#f472b6',
+    label: 'DMG',
     path: `<ellipse cx="12" cy="12" rx="10" ry="6" stroke-width="1.6"/>
            <path d="M2 12v5c0 3.31 4.48 6 10 6s10-2.69 10-6v-5" stroke-width="1.6"/>
            <ellipse cx="12" cy="12" rx="3" ry="1.8" stroke-width="1.5"/>`,
   },
   torrent: {
-    color: '#38bdf8', label: 'TRR',
+    color: '#38bdf8',
+    label: 'TRR',
     path: `<path d="M12 2L2 7l10 5 10-5-10-5z" stroke-width="1.6" stroke-linejoin="round"/>
            <path d="M2 17l10 5 10-5" stroke-width="1.6" stroke-linejoin="round"/>
            <path d="M2 12l10 5 10-5" stroke-width="1.6" stroke-linejoin="round"/>`,
   },
   generic: {
-    color: '#64748b', label: 'FILE',
+    color: '#64748b',
+    label: 'FILE',
     path: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="1.6"/>
            <polyline points="14 2 14 8 20 8" stroke-width="1.6" stroke-linejoin="round"/>`,
   },
@@ -179,49 +211,143 @@ const ICON_DEFS = {
 
 /* Extension → category lookup */
 const EXT_MAP = {
-  png:'image',jpg:'image',jpeg:'image',gif:'image',webp:'image',svg:'image',
-  bmp:'image',avif:'image',heic:'image',heif:'image',ico:'image',tif:'image',tiff:'image',
-  mp4:'video',mov:'video',mkv:'video',webm:'video',avi:'video',m4v:'video',
-  flv:'video',wmv:'video',ts:'video',mts:'video',mxf:'video',
-  mp3:'audio',wav:'audio',flac:'audio',aac:'audio',ogg:'audio',m4a:'audio',
-  opus:'audio',wma:'audio',alac:'audio',aiff:'audio',
-  pdf:'pdf',
-  doc:'doc',docx:'doc',odt:'doc',rtf:'doc',pages:'doc',txt:'doc',md:'doc',
-  rst:'doc',tex:'doc',wpd:'doc',
-  xls:'sheet',xlsx:'sheet',csv:'sheet',tsv:'sheet',ods:'sheet',numbers:'sheet',
-  ppt:'slide',pptx:'slide',odp:'slide',key:'slide',
-  zip:'archive',rar:'archive','7z':'archive',tar:'archive',gz:'archive',
-  bz2:'archive',xz:'archive',zst:'archive',cab:'archive',lz:'archive',
-  html:'code',css:'code',js:'code',ts:'code',jsx:'code',tsx:'code',
-  json:'code',yaml:'code',yml:'code',xml:'code',
-  py:'code',rb:'code',go:'code',rs:'code',php:'code',sh:'code',
-  bat:'code',ps1:'code',lua:'code',c:'code',cpp:'code','h':'code',
-  java:'code',kt:'code',swift:'code',dart:'code',
-  exe:'exe',msi:'exe',apk:'exe',pkg:'exe',deb:'exe',appimage:'exe',
-  snap:'exe',rpm:'exe',
-  ttf:'font',otf:'font',woff:'font',woff2:'font',eot:'font',
-  dmg:'disk',iso:'disk',img:'disk',vhd:'disk',vmdk:'disk',
-  torrent:'torrent',
+  png: 'image',
+  jpg: 'image',
+  jpeg: 'image',
+  gif: 'image',
+  webp: 'image',
+  svg: 'image',
+  bmp: 'image',
+  avif: 'image',
+  heic: 'image',
+  heif: 'image',
+  ico: 'image',
+  tif: 'image',
+  tiff: 'image',
+  mp4: 'video',
+  mov: 'video',
+  mkv: 'video',
+  webm: 'video',
+  avi: 'video',
+  m4v: 'video',
+  flv: 'video',
+  wmv: 'video',
+  ts: 'video',
+  mts: 'video',
+  mxf: 'video',
+  mp3: 'audio',
+  wav: 'audio',
+  flac: 'audio',
+  aac: 'audio',
+  ogg: 'audio',
+  m4a: 'audio',
+  opus: 'audio',
+  wma: 'audio',
+  alac: 'audio',
+  aiff: 'audio',
+  pdf: 'pdf',
+  doc: 'doc',
+  docx: 'doc',
+  odt: 'doc',
+  rtf: 'doc',
+  pages: 'doc',
+  txt: 'doc',
+  md: 'doc',
+  rst: 'doc',
+  tex: 'doc',
+  wpd: 'doc',
+  xls: 'sheet',
+  xlsx: 'sheet',
+  csv: 'sheet',
+  tsv: 'sheet',
+  ods: 'sheet',
+  numbers: 'sheet',
+  ppt: 'slide',
+  pptx: 'slide',
+  odp: 'slide',
+  key: 'slide',
+  zip: 'archive',
+  rar: 'archive',
+  '7z': 'archive',
+  tar: 'archive',
+  gz: 'archive',
+  bz2: 'archive',
+  xz: 'archive',
+  zst: 'archive',
+  cab: 'archive',
+  lz: 'archive',
+  html: 'code',
+  css: 'code',
+  js: 'code',
+  ts: 'code',
+  jsx: 'code',
+  tsx: 'code',
+  json: 'code',
+  yaml: 'code',
+  yml: 'code',
+  xml: 'code',
+  py: 'code',
+  rb: 'code',
+  go: 'code',
+  rs: 'code',
+  php: 'code',
+  sh: 'code',
+  bat: 'code',
+  ps1: 'code',
+  lua: 'code',
+  c: 'code',
+  cpp: 'code',
+  'h': 'code',
+  java: 'code',
+  kt: 'code',
+  swift: 'code',
+  dart: 'code',
+  exe: 'exe',
+  msi: 'exe',
+  apk: 'exe',
+  pkg: 'exe',
+  deb: 'exe',
+  appimage: 'exe',
+  snap: 'exe',
+  rpm: 'exe',
+  ttf: 'font',
+  otf: 'font',
+  woff: 'font',
+  woff2: 'font',
+  eot: 'font',
+  dmg: 'disk',
+  iso: 'disk',
+  img: 'disk',
+  vhd: 'disk',
+  vmdk: 'disk',
+  torrent: 'torrent',
 };
 
 function getIconDef(item) {
   const ext = getExtension(item).toLowerCase();
   const cat = EXT_MAP[ext] || inferFromMime(item.mime || '');
-  return { def: ICON_DEFS[cat] || ICON_DEFS.generic, ext: ext.toUpperCase(), cat };
+  return {
+    def: ICON_DEFS[cat] || ICON_DEFS.generic,
+    ext: ext.toUpperCase(),
+    cat
+  };
 }
 
 function inferFromMime(mime) {
   if (mime.startsWith('image/')) return 'image';
   if (mime.startsWith('video/')) return 'video';
   if (mime.startsWith('audio/')) return 'audio';
-  if (mime.includes('pdf'))      return 'pdf';
+  if (mime.includes('pdf')) return 'pdf';
   if (mime.includes('zip') || mime.includes('compressed') || mime.includes('archive')) return 'archive';
   if (mime.includes('text/') || mime.includes('javascript') || mime.includes('json')) return 'code';
   return 'generic';
 }
 
 function createFileIcon(item) {
-  const { def, ext } = getIconDef(item);
+  const {
+    def,
+    ext
+  } = getIconDef(item);
   const color = def.color;
   const label = ext || def.label;
 
@@ -238,7 +364,8 @@ function createFileIcon(item) {
 
   const iconEl = document.createElement('div');
   iconEl.className = 'fi-icon';
-  iconEl.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${def.path}</svg>`; /* STATIC SVG — def.path from ICON_DEFS constants only */
+  iconEl.innerHTML =
+    `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${def.path}</svg>`; /* STATIC SVG — def.path from ICON_DEFS constants only */
 
   const extEl = document.createElement('span');
   extEl.className = 'fi-ext';
@@ -262,37 +389,69 @@ function colorWithAlpha(hex, alpha) {
    State
    ───────────────────────────────────────────────────────────────────────── */
 const state = {
-  downloads:       [],
-  selected:        new Set(),
-  searchQuery:     '',
-  sortBy:          'date-desc',
-  filterStatus:    'all',
-  dateFilterMode:  'all',   // 'all' | 'today' | 'yesterday' | 'range'
-  dateFrom:        null,    // ISO date string 'YYYY-MM-DD' for range start
-  dateTo:          null,    // ISO date string 'YYYY-MM-DD' for range end
-  renderCount:     INITIAL_RENDER_COUNT,
-  isLoading:       true,
-  isRefreshing:    false,
-  surface:         'panel',
+  downloads: [],
+  selected: new Set(),
+  searchQuery: '',
+  sortBy: 'date-desc',
+  filterStatus: 'all',
+  dateFilterMode: 'all', // 'all' | 'today' | 'yesterday' | 'range'
+  dateFrom: null, // ISO date string 'YYYY-MM-DD' for range start
+  dateTo: null, // ISO date string 'YYYY-MM-DD' for range end
+  renderCount: INITIAL_RENDER_COUNT,
+  isLoading: true,
+  isRefreshing: false,
+  surface: 'panel',
   renderScheduled: false,
   availableDateMin: null,
   availableDateMax: null,
-  extFilter:       'all',   // 'all' | lowercase ext e.g. 'pdf'
-  themeMode:       'auto',  // 'auto' | 'light' | 'dark' | 'midnight'
+  extFilter: 'all', // 'all' | lowercase ext e.g. 'pdf'
+  themeMode: 'auto', // 'auto' | 'light' | 'dark' | 'midnight'
 };
 
-const modalState   = { resolve: null, lastFocused: null };
+const modalState = {
+  resolve: null,
+  lastFocused: null
+};
 const speedHistory = new Map();
 /** Fix #10: Track last-update timestamp per download id for poller coordination */
 const itemGeneration = new Map();
-let   pollTimer    = null;
-let   prevCounts   = {};
+let pollTimer = null;
+let prevCounts = {};
 /** Fix #16: Module-level reference — avoids window global */
-let   _syncSortPopoverFn = null;
+let _syncSortPopoverFn = null;
 
 /* Batch-erase state — pending IDs are flushed in a microtask */
-const pendingEraseIds  = new Set();
-let   eraseFlushQueued = false;
+const pendingEraseIds = new Set();
+let eraseFlushQueued = false;
+
+/* ── Bulk operation state ── */
+let _bulkSilent = false; /* Suppress per-item toasts during bulk ops */
+let _bulkAbort = null; /* Set to AbortController during bulk ops */
+
+/** Show/hide the in-toolbar progress UI */
+function setBulkProgress(current, total, label) {
+  const bar = $('#bulk-toolbar');
+  const prog = $('#bulk-progress');
+  const fill = $('#bulk-progress-fill');
+  const text = $('#bulk-progress-text');
+  if (!bar || !prog) return;
+
+  if (current == null) {
+    /* Operation finished — hide progress, show actions */
+    bar.classList.remove('is-busy');
+    prog.classList.add('hidden');
+    return;
+  }
+  bar.classList.add('is-busy');
+  prog.classList.remove('hidden');
+  if (fill) fill.style.width = `${Math.round((current / total) * 100)}%`;
+  if (text) text.textContent = label || `${current} / ${total}`;
+}
+
+/** Conditionally toast — suppressed during bulk operations */
+function silenceableToast(message, type, duration) {
+  if (!_bulkSilent) toast(message, type, duration);
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    DOM helpers
@@ -333,22 +492,30 @@ state.surface = urlParams.get('surface') === 'tab' ? 'tab' : 'panel';
    Micro-interaction: ripple
    ───────────────────────────────────────────────────────────────────────── */
 function addRipple(e) {
-  const btn  = e.currentTarget;
+  const btn = e.currentTarget;
   const rect = btn.getBoundingClientRect();
-  const x    = e.clientX - rect.left - 20;
-  const y    = e.clientY - rect.top  - 20;
-  const rip  = document.createElement('span');
+  const x = e.clientX - rect.left - 20;
+  const y = e.clientY - rect.top - 20;
+  const rip = document.createElement('span');
   rip.className = 'ripple';
   rip.style.cssText = `left:${x}px;top:${y}px`;
   btn.appendChild(rip);
-  rip.addEventListener('animationend', () => rip.remove(), { once: true });
+  rip.addEventListener('animationend', () => rip.remove(), {
+    once: true
+  });
 }
-function attachRipple(el) { el.addEventListener('click', addRipple); }
+
+function attachRipple(el) {
+  el.addEventListener('click', addRipple);
+}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Pure helpers
    ───────────────────────────────────────────────────────────────────────── */
-function toTime(v) { const t = new Date(v || 0).getTime(); return Number.isFinite(t) ? t : 0; }
+function toTime(v) {
+  const t = new Date(v || 0).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
 
 function shiftDay(date, days) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
@@ -361,7 +528,7 @@ function shiftDay(date, days) {
  */
 function getSize(item) {
   const known = Math.max(
-    item.fileSize   > 0 ? item.fileSize   : 0,
+    item.fileSize > 0 ? item.fileSize : 0,
     item.totalBytes > 0 ? item.totalBytes : 0,
   );
   if (known > 0) return known;
@@ -375,19 +542,23 @@ function getSize(item) {
  */
 function getCompletedSize(item) {
   return Math.max(
-    item.fileSize   > 0 ? item.fileSize   : 0,
+    item.fileSize > 0 ? item.fileSize : 0,
     item.totalBytes > 0 ? item.totalBytes : 0,
   );
 }
 
 /** Fix #3: Safe decoder — never throws on malformed percent-encoding */
 function safeDecode(str) {
-  try { return decodeURIComponent(str); } catch { return str; }
+  try {
+    return decodeURIComponent(str);
+  } catch {
+    return str;
+  }
 }
 
 function getFilename(item) {
   if (item.filename) {
-    const norm  = item.filename.replace(/\\/g, '/');
+    const norm = item.filename.replace(/\\/g, '/');
     const parts = norm.split('/').filter(Boolean);
     if (parts.length) return parts[parts.length - 1];
   }
@@ -406,14 +577,14 @@ function getFilename(item) {
 
 function getParentPath(item) {
   if (!item.filename) return '';
-  const norm  = item.filename.replace(/\\/g, '/');
+  const norm = item.filename.replace(/\\/g, '/');
   const slash = norm.lastIndexOf('/');
   return slash > 0 ? norm.slice(0, slash) : '';
 }
 
 function getExtension(item) {
   const name = getFilename(item);
-  const dot  = name.lastIndexOf('.');
+  const dot = name.lastIndexOf('.');
   return dot > 0 ? name.slice(dot + 1) : '';
 }
 
@@ -421,7 +592,7 @@ function formatSize(bytes) {
   if (bytes == null || bytes < 0) return '—';
   if (bytes === 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const idx   = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   return `${idx === 0 ? (bytes / Math.pow(1024, idx)) : (bytes / Math.pow(1024, idx)).toFixed(1)} ${units[idx]}`;
 }
 
@@ -433,8 +604,8 @@ function formatSize(bytes) {
  */
 function formatSizeInline(item) {
   if (item.state === 'in_progress') {
-    const recv  = item.bytesReceived > 0 ? item.bytesReceived : 0;
-    const total = item.totalBytes    > 0 ? item.totalBytes    : 0;
+    const recv = item.bytesReceived > 0 ? item.bytesReceived : 0;
+    const total = item.totalBytes > 0 ? item.totalBytes : 0;
     if (total > 0) return `${formatSize(recv)} / ${formatSize(total)}`;
     return recv > 0 ? formatSize(recv) : '—';
   }
@@ -447,20 +618,31 @@ function formatRelDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   const diff = Date.now() - date.getTime();
-  if (diff < 60_000)      return msg('time_just_now');
-  if (diff < 3_600_000)   return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000)  return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < 60_000) return msg('time_just_now');
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
   if (diff < 172_800_000) return msg('time_yesterday');
   if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`;
-  return date.toLocaleDateString(undefined, { month:'short', day:'numeric',
-    ...(date.getFullYear() !== new Date().getFullYear() ? { year:'numeric' } : {}) });
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    ...(date.getFullYear() !== new Date().getFullYear() ? {
+      year: 'numeric'
+    } : {})
+  });
 }
 
 function formatFullDate(value) {
   if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString(undefined, { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function truncateUrl(value, max = 58) {
@@ -487,7 +669,10 @@ function getAvailableDateBounds(items = state.downloads) {
     .map(item => item?.startTime ? new Date(item.startTime) : null)
     .filter(date => date && !Number.isNaN(date.getTime()))
     .sort((a, b) => a - b);
-  if (!dated.length) return { min: null, max: null };
+  if (!dated.length) return {
+    min: null,
+    max: null
+  };
   return {
     min: isoDateStr(dated[0]),
     max: isoDateStr(dated[dated.length - 1]),
@@ -498,17 +683,26 @@ function formatDateInputLabel(value) {
   if (!value) return '—';
   const date = new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }
 
-function syncDateInputs({ source = null } = {}) {
+function syncDateInputs({
+  source = null
+} = {}) {
   const dateFromEl = $('#date-from');
   const dateToEl = $('#date-to');
   const hintEl = $('#date-range-hint');
   const applyBtn = $('#btn-apply-range');
   if (!dateFromEl || !dateToEl || !hintEl || !applyBtn) return;
 
-  const { min, max } = getAvailableDateBounds();
+  const {
+    min,
+    max
+  } = getAvailableDateBounds();
   state.availableDateMin = min;
   state.availableDateMax = max;
 
@@ -551,13 +745,16 @@ function syncDateInputs({ source = null } = {}) {
 
 function escapeHtml(v) {
   return String(v)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function debounce(fn, wait) {
   let t = null;
-  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), wait);
+  };
 }
 
 function el(tag, props = {}, ...children) {
@@ -586,7 +783,10 @@ function el(tag, props = {}, ...children) {
  * - Returns a controller with activate()/deactivate() for popover open/close
  */
 function wireMenuKeyboard(container, itemSelector, onClose) {
-  if (!container) return { activate() {}, deactivate() {} };
+  if (!container) return {
+    activate() {},
+    deactivate() {}
+  };
 
   let typeaheadTimer = null;
   let typeaheadBuf = '';
@@ -616,39 +816,41 @@ function wireMenuKeyboard(container, itemSelector, onClose) {
     let next = -1;
 
     switch (e.key) {
-      case 'ArrowDown':
+    case 'ArrowDown':
+      e.preventDefault();
+      next = idx < items.length - 1 ? idx + 1 : 0;
+      break;
+    case 'ArrowUp':
+      e.preventDefault();
+      next = idx > 0 ? idx - 1 : items.length - 1;
+      break;
+    case 'Home':
+      e.preventDefault();
+      next = 0;
+      break;
+    case 'End':
+      e.preventDefault();
+      next = items.length - 1;
+      break;
+    case 'Escape':
+      e.preventDefault();
+      if (onClose) onClose();
+      return;
+    default:
+      /* Typeahead: single printable character → jump to matching item */
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
-        next = idx < items.length - 1 ? idx + 1 : 0;
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        next = idx > 0 ? idx - 1 : items.length - 1;
-        break;
-      case 'Home':
-        e.preventDefault();
-        next = 0;
-        break;
-      case 'End':
-        e.preventDefault();
-        next = items.length - 1;
-        break;
-      case 'Escape':
-        e.preventDefault();
-        if (onClose) onClose();
-        return;
-      default:
-        /* Typeahead: single printable character → jump to matching item */
-        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-          e.preventDefault();
-          clearTimeout(typeaheadTimer);
-          typeaheadBuf += e.key.toLowerCase();
-          typeaheadTimer = setTimeout(() => { typeaheadBuf = ''; }, 500);
-          const match = items.findIndex(it =>
-            (it.textContent || '').trim().toLowerCase().startsWith(typeaheadBuf)
-          );
-          if (match >= 0) next = match;
-        }
-        break;
+        clearTimeout(typeaheadTimer);
+        typeaheadBuf += e.key.toLowerCase();
+        typeaheadTimer = setTimeout(() => {
+          typeaheadBuf = '';
+        }, 500);
+        const match = items.findIndex(it =>
+          (it.textContent || '').trim().toLowerCase().startsWith(typeaheadBuf)
+        );
+        if (match >= 0) next = match;
+      }
+      break;
     }
     if (next >= 0) focusItem(items, next);
   });
@@ -679,12 +881,21 @@ function invoke(api, method, ...args) {
   if (typeof fn !== 'function') return Promise.reject(new Error(`Missing API: ${method}`));
   return new Promise((resolve, reject) => {
     let settled = false;
-    const done  = (err, val) => { if (settled) return; settled = true; err ? reject(err) : resolve(val); };
+    const done = (err, val) => {
+      if (settled) return;
+      settled = true;
+      err ? reject(err) : resolve(val);
+    };
     try {
-      const cb = val => { const e = chrome.runtime.lastError; done(e ? new Error(e.message) : null, val); };
-      const r  = fn.call(api, ...args, cb);
+      const cb = val => {
+        const e = chrome.runtime.lastError;
+        done(e ? new Error(e.message) : null, val);
+      };
+      const r = fn.call(api, ...args, cb);
       if (r && typeof r.then === 'function') r.then(v => done(null, v)).catch(e => done(e));
-    } catch (e) { done(e); }
+    } catch (e) {
+      done(e);
+    }
   });
 }
 
@@ -695,12 +906,23 @@ function sendMsg(payload) {
       chrome.runtime.sendMessage(payload, r => {
         const err = chrome.runtime.lastError;
         if (err) {
-          resolve({ ok: false, reason: err.message || 'runtime_error' });
+          resolve({
+            ok: false,
+            reason: err.message || 'runtime_error'
+          });
         } else {
-          resolve(r || { ok: false, reason: 'empty_response' });
+          resolve(r || {
+            ok: false,
+            reason: 'empty_response'
+          });
         }
       });
-    } catch (e) { resolve({ ok: false, reason: e?.message || 'send_failed' }); }
+    } catch (e) {
+      resolve({
+        ok: false,
+        reason: e?.message || 'send_failed'
+      });
+    }
   });
 }
 
@@ -709,9 +931,12 @@ function sendMsg(payload) {
    ───────────────────────────────────────────────────────────────────────── */
 function recordSpeed(id, bytes) {
   if (bytes == null || bytes < 0) return;
-  const now  = Date.now();
+  const now = Date.now();
   const hist = speedHistory.get(id) || [];
-  hist.push({ time: now, bytes });
+  hist.push({
+    time: now,
+    bytes
+  });
   const cut = now - SPEED_WINDOW_MS;
   let i = 0;
   while (i < hist.length - 1 && hist[i].time < cut) i++;
@@ -733,11 +958,13 @@ function getEtaSec(item, bps) {
   return rem <= 0 ? null : rem / bps;
 }
 
-function fmtSpeed(bps) { return bps != null ? `${formatSize(bps)}/s` : null; }
+function fmtSpeed(bps) {
+  return bps != null ? `${formatSize(bps)}/s` : null;
+}
 
 function fmtEta(s) {
   if (s == null || !Number.isFinite(s) || s < 0) return null;
-  if (s < 60)   return `${Math.round(s)}s`;
+  if (s < 60) return `${Math.round(s)}s`;
   if (s < 3600) return `${Math.round(s / 60)}m`;
   return `${Math.round(s / 3600)}h`;
 }
@@ -747,15 +974,24 @@ function fmtEta(s) {
    ───────────────────────────────────────────────────────────────────────── */
 function startPollIfNeeded() {
   const active = state.downloads.some(d => d.state === 'in_progress');
-  if (active && !pollTimer)  pollTimer = setInterval(pollActive, POLL_INTERVAL_MS);
-  else if (!active && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  if (active && !pollTimer) pollTimer = setInterval(pollActive, POLL_INTERVAL_MS);
+  else if (!active && pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
 }
 
 async function pollActive() {
   try {
     const pollTime = Date.now();
-    const items = await invoke(chrome.downloads, 'search', { state: 'in_progress' });
-    if (!Array.isArray(items) || !items.length) { clearInterval(pollTimer); pollTimer = null; return; }
+    const items = await invoke(chrome.downloads, 'search', {
+      state: 'in_progress'
+    });
+    if (!Array.isArray(items) || !items.length) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+      return;
+    }
     for (const u of items) {
       const ex = state.downloads.find(d => d.id === u.id);
       if (!ex) continue;
@@ -767,7 +1003,9 @@ async function pollActive() {
       patchActiveCard(ex);
     }
     updateSidebarStats();
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -800,9 +1038,15 @@ function patchActiveCard(item) {
       const info = card.querySelector('.file-info');
       if (info) {
         info.appendChild(el('div', {
-          class:'progress-wrap', role:'progressbar',
-          'aria-valuemin':'0', 'aria-valuemax':'100', 'aria-valuenow': String(status.progress),
-        }, el('div', { class:'progress-fill', style:`width:${status.progress}%` })));
+          class: 'progress-wrap',
+          role: 'progressbar',
+          'aria-valuemin': '0',
+          'aria-valuemax': '100',
+          'aria-valuenow': String(status.progress),
+        }, el('div', {
+          class: 'progress-fill',
+          style: `width:${status.progress}%`
+        })));
       }
     }
   } else if (progWrap) {
@@ -816,7 +1060,9 @@ function patchActiveCard(item) {
     badge.className = `status-badge ${status.cls}`;
     badge.innerHTML = '';
     if (status.dot) {
-      badge.appendChild(existingDot || el('span', { class:'badge-dot' }));
+      badge.appendChild(existingDot || el('span', {
+        class: 'badge-dot'
+      }));
     }
     badge.appendChild(document.createTextNode(' ' + status.label));
   }
@@ -841,10 +1087,18 @@ function patchActiveCard(item) {
         const spd = fmtSpeed(bps);
         const eta = fmtEta(getEtaSec(item, bps));
         if (spd) {
-          meta.appendChild(el('span', { class:'meta-dot' }));
-          meta.appendChild(el('span', { class:'speed-badge', text: spd }));
+          meta.appendChild(el('span', {
+            class: 'meta-dot'
+          }));
+          meta.appendChild(el('span', {
+            class: 'speed-badge',
+            text: spd
+          }));
         }
-        if (eta) meta.appendChild(el('span', { class:'eta-text', text: `· ${eta} left` }));
+        if (eta) meta.appendChild(el('span', {
+          class: 'eta-text',
+          text: `· ${eta} left`
+        }));
       }
     }
   }
@@ -858,19 +1112,49 @@ function patchActiveCard(item) {
 function getStatusInfo(item) {
   if (item.state === 'complete') {
     if (item.exists === false)
-      return { label: msg('status_missing'),   cls: 'badge-missing',  dot: true, progress: null };
-    return   { label: msg('status_complete'),  cls: 'badge-complete', dot: true, progress: null };
+      return {
+        label: msg('status_missing'),
+        cls: 'badge-missing',
+        dot: true,
+        progress: null
+      };
+    return {
+      label: msg('status_complete'),
+      cls: 'badge-complete',
+      dot: true,
+      progress: null
+    };
   }
   if (item.state === 'in_progress') {
     if (item.paused)
-      return { label: msg('status_paused'),    cls: 'badge-paused',   dot: true, progress: progressPct(item) };
+      return {
+        label: msg('status_paused'),
+        cls: 'badge-paused',
+        dot: true,
+        progress: progressPct(item)
+      };
     const p = progressPct(item);
-    return   { label: p != null ? `${p}%` : 'Downloading', cls: 'badge-progress', dot: true, progress: p };
+    return {
+      label: p != null ? `${p}%` : 'Downloading',
+      cls: 'badge-progress',
+      dot: true,
+      progress: p
+    };
   }
   if (item.state === 'interrupted') {
-    return { label: INTERRUPT_LABELS[item.error] || item.error || 'Failed', cls: 'badge-failed', dot: true, progress: null };
+    return {
+      label: INTERRUPT_LABELS[item.error] || item.error || 'Failed',
+      cls: 'badge-failed',
+      dot: true,
+      progress: null
+    };
   }
-  return { label: item.state || 'Unknown', cls: 'badge-failed', dot: false, progress: null };
+  return {
+    label: item.state || 'Unknown',
+    cls: 'badge-failed',
+    dot: false,
+    progress: null
+  };
 }
 
 function progressPct(item) {
@@ -893,7 +1177,12 @@ function highlightInto(target, text, query) {
   }
   const esc = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   let re;
-  try { re = new RegExp(esc, 'gi'); } catch { target.textContent = text; return; }
+  try {
+    re = new RegExp(esc, 'gi');
+  } catch {
+    target.textContent = text;
+    return;
+  }
 
   let lastIndex = 0;
   let match;
@@ -905,7 +1194,9 @@ function highlightInto(target, text, query) {
     mark.textContent = match[0];
     target.appendChild(mark);
     lastIndex = re.lastIndex;
-    if (match[0].length === 0) { re.lastIndex++; } /* prevent infinite loop on zero-width match */
+    if (match[0].length === 0) {
+      re.lastIndex++;
+    } /* prevent infinite loop on zero-width match */
   }
   if (lastIndex < text.length) {
     target.appendChild(document.createTextNode(text.slice(lastIndex)));
@@ -918,22 +1209,30 @@ function highlightInto(target, text, query) {
 function getFiltered() {
   let items = state.downloads;
   switch (state.filterStatus) {
-    case 'complete':    items = items.filter(d => d.state === 'complete' && d.exists !== false); break;
-    case 'in_progress': items = items.filter(d => d.state === 'in_progress'); break;
-    case 'failed':      items = items.filter(d => d.state === 'interrupted'); break;
-    case 'missing':     items = items.filter(d => d.state === 'complete' && d.exists === false); break;
+  case 'complete':
+    items = items.filter(d => d.state === 'complete' && d.exists !== false);
+    break;
+  case 'in_progress':
+    items = items.filter(d => d.state === 'in_progress');
+    break;
+  case 'failed':
+    items = items.filter(d => d.state === 'interrupted');
+    break;
+  case 'missing':
+    items = items.filter(d => d.state === 'complete' && d.exists === false);
+    break;
   }
   if (state.dateFilterMode !== 'all') {
-    const todayStr     = isoDateStr(new Date());
-    const yesterStr    = isoDateStr(shiftDay(new Date(), -1));
+    const todayStr = isoDateStr(new Date());
+    const yesterStr = isoDateStr(shiftDay(new Date(), -1));
     items = items.filter(d => {
       if (!d.startTime) return false;
       const s = isoDateStr(new Date(d.startTime));
-      if (state.dateFilterMode === 'today')     return s === todayStr;
+      if (state.dateFilterMode === 'today') return s === todayStr;
       if (state.dateFilterMode === 'yesterday') return s === yesterStr;
       if (state.dateFilterMode === 'range') {
         if (state.dateFrom && s < state.dateFrom) return false;
-        if (state.dateTo   && s > state.dateTo)   return false;
+        if (state.dateTo && s > state.dateTo) return false;
         return true;
       }
       return true;
@@ -941,9 +1240,8 @@ function getFiltered() {
   }
   if (state.searchQuery) {
     const q = state.searchQuery.toLowerCase();
-    items = items.filter(d =>
-      [getFilename(d), d.url, d.finalUrl, d.filename, getParentPath(d)]
-        .filter(Boolean).some(v => String(v).toLowerCase().includes(q))
+    items = items.filter(d => [getFilename(d), d.url, d.finalUrl, d.filename, getParentPath(d)]
+      .filter(Boolean).some(v => String(v).toLowerCase().includes(q))
     );
   }
   if (state.extFilter && state.extFilter !== 'all') {
@@ -955,20 +1253,38 @@ function getFiltered() {
 function groupItems(items) {
   if (!state.sortBy.startsWith('date')) {
     const label = state.sortBy.startsWith('name') ? msg('group_sorted_by_name') : msg('group_sorted_by_size');
-    return [{ label, items }];
+    return [{
+      label,
+      items
+    }];
   }
-  const now    = new Date();
-  const today  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const groups = [];
-  const map    = new Map();
+  const map = new Map();
   for (const item of items) {
-    const d   = new Date(item.startTime || 0);
+    const d = new Date(item.startTime || 0);
     const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     let label = null;
-    for (const g of DATE_GROUPS) { if (g.test(day, today)) { label = g.label; break; } }
+    for (const g of DATE_GROUPS) {
+      if (g.test(day, today)) {
+        label = g.label;
+        break;
+      }
+    }
     if (!label) label = Number.isNaN(d.getTime()) ? msg('group_unknown_date') :
-      d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-    if (!map.has(label)) { const b = { label, items: [] }; map.set(label, b); groups.push(b); }
+      d.toLocaleDateString(undefined, {
+        month: 'long',
+        year: 'numeric'
+      });
+    if (!map.has(label)) {
+      const b = {
+        label,
+        items: []
+      };
+      map.set(label, b);
+      groups.push(b);
+    }
     map.get(label).items.push(item);
   }
   return groups;
@@ -993,14 +1309,21 @@ function updateVisibleCountBar(filtered) {
 function scheduleRender() {
   if (state.renderScheduled) return;
   state.renderScheduled = true;
-  requestAnimationFrame(() => { state.renderScheduled = false; renderAll(); });
+  requestAnimationFrame(() => {
+    state.renderScheduled = false;
+    renderAll();
+  });
 }
 
-function resetRenderCount() { state.renderCount = INITIAL_RENDER_COUNT; }
+function resetRenderCount() {
+  state.renderCount = INITIAL_RENDER_COUNT;
+}
 
 function pruneSelection() {
   const valid = new Set(getFiltered().map(d => d.id));
-  for (const id of [...state.selected]) { if (!valid.has(id)) state.selected.delete(id); }
+  for (const id of [...state.selected]) {
+    if (!valid.has(id)) state.selected.delete(id);
+  }
 }
 
 /**
@@ -1040,8 +1363,14 @@ function renderAll() {
 
   if (rendered.length) {
     for (const group of groupItems(rendered)) {
-      const sec = el('section', { class: 'date-group', 'data-label': group.label },
-        el('h2', { class: 'date-group-label', text: group.label })
+      const sec = el('section', {
+          class: 'date-group',
+          'data-label': group.label
+        },
+        el('h2', {
+          class: 'date-group-label',
+          text: group.label
+        })
       );
       for (const item of group.items) {
         renderedIds.add(item.id);
@@ -1058,7 +1387,10 @@ function renderAll() {
           } else {
             /* Build new card and cache it */
             const card = buildCard(item);
-            _cardCache.set(item.id, { element: card, fingerprint: fp });
+            _cardCache.set(item.id, {
+              element: card,
+              fingerprint: fp
+            });
             sec.appendChild(card);
           }
         } catch (err) {
@@ -1085,19 +1417,21 @@ function renderAll() {
 function updateCounts(filtered) {
   const all = state.downloads;
   const c = {
-    all:     all.length,
-    done:    all.filter(d => d.state === 'complete' && d.exists !== false).length,
-    active:  all.filter(d => d.state === 'in_progress').length,
-    failed:  all.filter(d => d.state === 'interrupted').length,
+    all: all.length,
+    done: all.filter(d => d.state === 'complete' && d.exists !== false).length,
+    active: all.filter(d => d.state === 'in_progress').length,
+    failed: all.filter(d => d.state === 'interrupted').length,
     missing: all.filter(d => d.state === 'complete' && d.exists === false).length,
   };
 
-  updateCount('#count-all',        c.all,     prevCounts.all);
-  updateCount('#count-complete',   c.done,    prevCounts.done);
-  updateCount('#count-inprogress', c.active,  prevCounts.active);
-  updateCount('#count-failed',     c.failed,  prevCounts.failed);
-  updateCount('#count-missing',    c.missing, prevCounts.missing);
-  prevCounts = { ...c };
+  updateCount('#count-all', c.all, prevCounts.all);
+  updateCount('#count-complete', c.done, prevCounts.done);
+  updateCount('#count-inprogress', c.active, prevCounts.active);
+  updateCount('#count-failed', c.failed, prevCounts.failed);
+  updateCount('#count-missing', c.missing, prevCounts.missing);
+  prevCounts = {
+    ...c
+  };
 
   setText('#visible-count', filtered.length);
   setText('#selected-total', state.selected.size);
@@ -1106,9 +1440,10 @@ function updateCounts(filtered) {
   // "On disk" — completed files + bytes already written for active downloads.
   // When items are selected, restrict to that subset.
   /* Fix #18: Explicit parentheses for clarity */
-  const diskSource = state.selected.size > 0
-    ? filtered.filter(d => state.selected.has(d.id) && ((d.state === 'complete' && d.exists !== false) || d.state === 'in_progress'))
-    : filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
+  const diskSource = state.selected.size > 0 ?
+    filtered.filter(d => state.selected.has(d.id) && ((d.state === 'complete' && d.exists !== false) || d.state ===
+      'in_progress')) :
+    filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
   const diskTotal = diskSource.reduce((s, d) => {
     if (d.state === 'in_progress') return s + (d.bytesReceived > 0 ? d.bytesReceived : 0);
     return s + getCompletedSize(d);
@@ -1122,20 +1457,22 @@ function updateCounts(filtered) {
  */
 function updateSidebarStats() {
   const filtered = getFiltered();
-  const all      = state.downloads;
+  const all = state.downloads;
   const c = {
-    all:     all.length,
-    done:    all.filter(d => d.state === 'complete' && d.exists !== false).length,
-    active:  all.filter(d => d.state === 'in_progress').length,
-    failed:  all.filter(d => d.state === 'interrupted').length,
+    all: all.length,
+    done: all.filter(d => d.state === 'complete' && d.exists !== false).length,
+    active: all.filter(d => d.state === 'in_progress').length,
+    failed: all.filter(d => d.state === 'interrupted').length,
     missing: all.filter(d => d.state === 'complete' && d.exists === false).length,
   };
-  updateCount('#count-all',        c.all,     prevCounts.all);
-  updateCount('#count-complete',   c.done,    prevCounts.done);
-  updateCount('#count-inprogress', c.active,  prevCounts.active);
-  updateCount('#count-failed',     c.failed,  prevCounts.failed);
-  updateCount('#count-missing',    c.missing, prevCounts.missing);
-  prevCounts = { ...c };
+  updateCount('#count-all', c.all, prevCounts.all);
+  updateCount('#count-complete', c.done, prevCounts.done);
+  updateCount('#count-inprogress', c.active, prevCounts.active);
+  updateCount('#count-failed', c.failed, prevCounts.failed);
+  updateCount('#count-missing', c.missing, prevCounts.missing);
+  prevCounts = {
+    ...c
+  };
 
   setText('#visible-count', filtered.length);
   setText('#selected-total', state.selected.size);
@@ -1143,9 +1480,10 @@ function updateSidebarStats() {
 
   // "On disk" — completed files + bytes already written for active downloads.
   /* Fix #18: Explicit parentheses for clarity */
-  const diskSource = state.selected.size > 0
-    ? filtered.filter(d => state.selected.has(d.id) && ((d.state === 'complete' && d.exists !== false) || d.state === 'in_progress'))
-    : filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
+  const diskSource = state.selected.size > 0 ?
+    filtered.filter(d => state.selected.has(d.id) && ((d.state === 'complete' && d.exists !== false) || d.state ===
+      'in_progress')) :
+    filtered.filter(d => (d.state === 'complete' && d.exists !== false) || d.state === 'in_progress');
   const diskTotal = diskSource.reduce((s, d) => {
     if (d.state === 'in_progress') return s + (d.bytesReceived > 0 ? d.bytesReceived : 0);
     return s + getCompletedSize(d);
@@ -1170,81 +1508,152 @@ function updateCount(sel, next, prev) {
 function updateSummary(filtered, rendered) {
   const node = $('#results-summary');
   if (!node) return;
-  const q    = state.searchQuery ? ` for "${state.searchQuery}"` : '';
-  const name = { all:'downloads', complete:'complete files', in_progress:'active downloads',
-    failed:'failed', missing:'missing files' }[state.filterStatus] || 'downloads';
-  if (state.isLoading) { node.textContent = 'Loading…'; return; }
-  if (!filtered.length) { node.textContent = `0 ${name}${q}`; return; }
+  const q = state.searchQuery ? ` for "${state.searchQuery}"` : '';
+  const name = {
+    all: 'downloads',
+    complete: 'complete files',
+    in_progress: 'active downloads',
+    failed: 'failed',
+    missing: 'missing files'
+  } [state.filterStatus] || 'downloads';
+  if (state.isLoading) {
+    node.textContent = 'Loading…';
+    return;
+  }
+  if (!filtered.length) {
+    node.textContent = `0 ${name}${q}`;
+    return;
+  }
   const shown = Math.min(rendered.length, filtered.length);
-  node.textContent = shown < filtered.length
-    ? `Showing ${shown} of ${filtered.length} ${name}${q}`
-    : `${filtered.length} ${name}${q}`;
+  node.textContent = shown < filtered.length ?
+    `Showing ${shown} of ${filtered.length} ${name}${q}` :
+    `${filtered.length} ${name}${q}`;
 }
 
 function updateBulkBar(filtered) {
-  const bar  = $('#bulk-toolbar');
-  const cnt  = state.selected.size;
+  const bar = $('#bulk-toolbar');
+  const cnt = state.selected.size;
   const vIds = filtered.map(d => d.id);
   const vSel = vIds.filter(id => state.selected.has(id)).length;
 
   if (bar) bar.classList.toggle('hidden', cnt === 0);
-  if (cnt > 0) setText('#selected-count', `${cnt} selected`);
+
+  if (cnt > 0) {
+    /* Compute size of selected items */
+    const selItems = state.downloads.filter(d => state.selected.has(d.id));
+    const totalBytes = selItems.reduce((sum, d) => {
+      const isMissing = d.state === 'complete' && d.exists === false;
+      const isCancelled = d.state === 'interrupted' && d.error === 'USER_CANCELED';
+
+      if (isMissing || isCancelled) return sum;
+      if (d.state === 'in_progress') {
+        return sum + (d.bytesReceived > 0 ? d.bytesReceived : 0);
+      }
+
+      if (d.state === 'complete' && d.exists !== false) {
+        return sum + getCompletedSize(d);
+      }
+
+      // failed/interrupted (except USER_CANCELED) and anything else do not count
+      return sum;
+    }, 0);
+
+    setText('#selected-count', `${cnt} selected`);
+    const sizeEl = $('#selected-size');
+    if (sizeEl) sizeEl.textContent = totalBytes > 0 ? `· ${formatSize(totalBytes)}` : '';
+
+    /* Soft-disable bulk buttons — uses aria-disabled + class instead of native
+       disabled so click events still fire and the handler can show a toast. */
+    const hasCompleteDisk = selItems.some(d => d.state === 'complete' && d.exists !== false);
+    const hasNonActive = selItems.some(d => d.state !== 'in_progress');
+    const delBtn = $('#btn-bulk-delete');
+    const eraBtn = $('#btn-bulk-erase');
+    const softDisable = (btn, off) => {
+      if (!btn) return;
+      btn.classList.toggle('is-disabled', off);
+      btn.setAttribute('aria-disabled', String(off));
+      btn.style.opacity = off ? '0.35' : '';
+      btn.style.cursor = off ? 'not-allowed' : '';
+      btn.style.pointerEvents = ''; /* always allow click-through */
+    };
+    softDisable(delBtn, !hasCompleteDisk && !hasNonActive);
+    softDisable(eraBtn, !hasNonActive);
+  }
 
   const cb = $('#select-all');
-  cb.checked       = Boolean(vIds.length) && vSel === vIds.length;
+  cb.checked = Boolean(vIds.length) && vSel === vIds.length;
   cb.indeterminate = vSel > 0 && vSel < vIds.length;
   setText('#selected-total', cnt);
 }
 
 function updateFooter(filtered, rendered) {
-  const footer  = $('#results-footer');
+  const footer = $('#results-footer');
   const hasMore = rendered.length < filtered.length;
   if (!footer) return;
-  if (!filtered.length) { footer.classList.add('hidden'); return; }
+  if (!filtered.length) {
+    footer.classList.add('hidden');
+    return;
+  }
   footer.classList.remove('hidden');
-  setText('#results-footer-text', hasMore
-    ? `${filtered.length - rendered.length} more available`
-    : '');
+  setText('#results-footer-text', hasMore ?
+    `${filtered.length - rendered.length} more available` :
+    '');
   toggleClass('#btn-load-more', 'hidden', !hasMore);
 }
 
 function setEmpty(filtered) {
   const emp = $('#empty-state');
   if (!emp) return;
-  if (filtered.length) { emp.classList.add('hidden'); return; }
+  if (filtered.length) {
+    emp.classList.add('hidden');
+    return;
+  }
+
   emp.classList.remove('hidden');
-  const msg = { complete:msg('empty_no_complete'), in_progress:msg('empty_no_active'),
-    failed:msg('empty_no_failed'), missing:msg('empty_no_missing') };
-  setText('#empty-message', state.searchQuery
-    ? `No results for "${state.searchQuery}"`
-    : (msg[state.filterStatus] || msg('empty_title')));
+
+  const emptyLabels = {
+    complete: msg('empty_no_complete'),
+    in_progress: msg('empty_no_active'),
+    failed: msg('empty_no_failed'),
+    missing: msg('empty_no_missing'),
+  };
+
+  setText(
+    '#empty-message',
+    state.searchQuery ?
+    `No results for "${state.searchQuery}"` :
+    (emptyLabels[state.filterStatus] || msg('empty_title'))
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
    Card builder
    ───────────────────────────────────────────────────────────────────────── */
 function buildCard(item) {
-  const status     = getStatusInfo(item);
-  const filename   = getFilename(item);
+  const status = getStatusInfo(item);
+  const filename = getFilename(item);
   const isSelected = state.selected.has(item.id);
   const isComplete = item.state === 'complete' && item.exists !== false;
-  const isMissing  = item.state === 'complete' && item.exists === false;
-  const isActive   = item.state === 'in_progress';
-  const canAgain   = Boolean(item.finalUrl || item.url);
-  const q          = state.searchQuery;
+  const isMissing = item.state === 'complete' && item.exists === false;
+  const isFailed = item.state === 'interrupted';
+  const isActive = item.state === 'in_progress';
+  const canAgain = Boolean(item.finalUrl || item.url);
+  const q = state.searchQuery;
 
   const classes = ['dl-card',
     isSelected ? 'is-selected' : '',
-    isMissing  ? 'is-missing'  : '',
-    isActive   ? 'is-active'   : '',
+    isMissing ? 'is-missing' : '',
+    isActive ? 'is-active' : '',
   ].filter(Boolean).join(' ');
 
   const card = el('article', {
     class: classes,
-    role:  'listitem',
+    role: 'listitem',
     'data-id': item.id,
     oncontextmenu: e => showCtxMenu(e, item),
-    ondblclick: () => { if (isComplete) openFile(item.id); },
+    ondblclick: () => {
+      if (isComplete) openFile(item.id);
+    },
     onclick: e => {
       // Don't intercept clicks on interactive children
       if (e.target.closest('button, a, input, label')) return;
@@ -1253,7 +1662,11 @@ function buildCard(item) {
   });
 
   /* Checkbox */
-  const cb = el('input', { class:'item-check', type:'checkbox', 'aria-label':`Select ${filename}` });
+  const cb = el('input', {
+    class: 'item-check',
+    type: 'checkbox',
+    'aria-label': `Select ${filename}`
+  });
   cb.checked = isSelected;
   cb.addEventListener('change', () => toggleSel(item.id));
 
@@ -1261,31 +1674,51 @@ function buildCard(item) {
   const iconWrap = createFileIcon(item);
 
   /* Info */
-  const nameEl = el('div', { class:'file-name', title: filename });
+  const nameEl = el('div', {
+    class: 'file-name',
+    title: filename
+  });
   highlightInto(nameEl, filename, q);
 
   const urlVal = item.finalUrl || item.url || '';
-  const urlEl  = el('div', { class:'file-url' });
+  const urlEl = el('div', {
+    class: 'file-url'
+  });
   if (urlVal) {
-    const a = el('a', { href:urlVal, target:'_blank', rel:'noopener noreferrer', title:urlVal });
+    const a = el('a', {
+      href: urlVal,
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      title: urlVal
+    });
     highlightInto(a, truncateUrl(urlVal), q);
     urlEl.appendChild(a);
   } else {
     urlEl.textContent = msg('no_source_url');
   }
 
-  const pathEl = el('div', { class:'file-path', title: item.filename || '',
-    text: item.filename || msg('path_unavailable') });
+  const pathEl = el('div', {
+    class: 'file-path',
+    title: item.filename || '',
+    text: item.filename || msg('path_unavailable')
+  });
 
   /* Meta row */
-  const meta = el('div', { class:'file-meta' });
+  const meta = el('div', {
+    class: 'file-meta'
+  });
 
   const addMeta = (text, cls, title) => {
-    const s = el('span', { class: cls ? `meta-text ${cls}` : 'meta-text' }); s.textContent = text;
+    const s = el('span', {
+      class: cls ? `meta-text ${cls}` : 'meta-text'
+    });
+    s.textContent = text;
     if (title) s.title = title;
     meta.appendChild(s);
   };
-  const dot = () => meta.appendChild(el('span', { class:'meta-dot' }));
+  const dot = () => meta.appendChild(el('span', {
+    class: 'meta-dot'
+  }));
 
   addMeta(formatSizeInline(item), 'size-text');
   dot();
@@ -1293,8 +1726,12 @@ function buildCard(item) {
   dot();
 
   /* Status badge */
-  const badge = el('span', { class:`status-badge ${status.cls}` });
-  if (status.dot) badge.appendChild(el('span', { class:'badge-dot' }));
+  const badge = el('span', {
+    class: `status-badge ${status.cls}`
+  });
+  if (status.dot) badge.appendChild(el('span', {
+    class: 'badge-dot'
+  }));
   badge.appendChild(document.createTextNode(' ' + status.label));
   meta.appendChild(badge);
 
@@ -1306,31 +1743,47 @@ function buildCard(item) {
       const eta = fmtEta(getEtaSec(item, bps));
       if (spd) {
         dot();
-        meta.appendChild(el('span', { class:'speed-badge', text: spd }));
+        meta.appendChild(el('span', {
+          class: 'speed-badge',
+          text: spd
+        }));
       }
-      if (eta) meta.appendChild(el('span', { class:'eta-text', text: `· ${eta} left` }));
+      if (eta) meta.appendChild(el('span', {
+        class: 'eta-text',
+        text: `· ${eta} left`
+      }));
     }
   }
 
-  const info = el('div', { class:'file-info' }, nameEl, urlEl, pathEl, meta);
+  const info = el('div', {
+    class: 'file-info'
+  }, nameEl, urlEl, pathEl, meta);
 
   /* Progress bar */
   if (isActive && status.progress != null) {
     info.appendChild(el('div', {
-      class:'progress-wrap', role:'progressbar',
-      'aria-valuemin':'0', 'aria-valuemax':'100', 'aria-valuenow': String(status.progress),
-    }, el('div', { class:'progress-fill', style:`width:${status.progress}%` })));
+      class: 'progress-wrap',
+      role: 'progressbar',
+      'aria-valuemin': '0',
+      'aria-valuemax': '100',
+      'aria-valuenow': String(status.progress),
+    }, el('div', {
+      class: 'progress-fill',
+      style: `width:${status.progress}%`
+    })));
   }
 
   /* Actions */
-  const actions = el('div', { class:'item-actions' });
+  const actions = el('div', {
+    class: 'item-actions'
+  });
 
   if (isComplete) {
-    actions.appendChild(mkBtn(btnIcon('open',   'Open'),   () => openFile(item.id),   `Open ${filename}`));
+    actions.appendChild(mkBtn(btnIcon('open', 'Open'), () => openFile(item.id), `Open ${filename}`));
     actions.appendChild(mkBtn(btnIcon('reveal', 'Reveal'), () => revealFile(item.id), `Reveal ${filename} in folder`));
   } else if (isActive) {
     const pauseLabel = item.paused ? 'Resume' : 'Pause';
-    const pauseKey   = item.paused ? 'resume' : 'pause';
+    const pauseKey = item.paused ? 'resume' : 'pause';
     actions.appendChild(mkBtn(btnIcon(pauseKey, pauseLabel),
       () => item.paused ? resumeDl(item.id) : pauseDl(item.id),
       `${pauseLabel} ${filename}`));
@@ -1343,15 +1796,19 @@ function buildCard(item) {
 
   /* Delete button — always does delete+erase for one-click cleanup */
   /* Fix #11: Only disable when item is actively downloading (can't delete mid-stream) */
-  const delHtml = isMissing
-    ? btnIcon('delete', 'Remove')
-    : btnIcon('delete', 'Delete');
+  const delHtml = isMissing || isFailed ?
+    btnIcon('delete', 'Remove') :
+    btnIcon('delete', 'Delete');
   const delBtn = mkBtn(delHtml, () => deleteAndErase(item.id), `Delete ${filename}`);
   delBtn.disabled = isActive;
+  if (isActive) delBtn.title = 'Cannot delete while downloading — pause or cancel first';
   delBtn.classList.add('btn-delete');
   actions.appendChild(delBtn);
 
-  const moreBtn = mkBtn(btnIcon('more'), e => { e.stopPropagation(); showCtxMenu(e, item); },
+  const moreBtn = mkBtn(btnIcon('more'), e => {
+      e.stopPropagation();
+      showCtxMenu(e, item);
+    },
     `More options for ${filename}`, 'btn-more');
   actions.appendChild(moreBtn);
 
@@ -1365,8 +1822,12 @@ function mkBtn(htmlContent, handler, ariaLabel, extra = '') {
   b.className = `action-btn glass-btn ${extra}`.trim();
   b.type = 'button';
   b.setAttribute('aria-label', ariaLabel);
-  b.innerHTML = htmlContent; /* STATIC SVG — htmlContent from btnIcon() uses BTN_ICONS constants + escapeHtml(text) only */
-  b.addEventListener('click', e => { e.stopPropagation(); handler(e); });
+  b.innerHTML =
+  htmlContent; /* STATIC SVG — htmlContent from btnIcon() uses BTN_ICONS constants + escapeHtml(text) only */
+  b.addEventListener('click', e => {
+    e.stopPropagation();
+    handler(e);
+  });
   attachRipple(b);
   return b;
 }
@@ -1380,13 +1841,16 @@ function toggleSel(id) {
   scheduleRender();
 }
 
-function clearSel() { state.selected.clear(); scheduleRender(); }
+function clearSel() {
+  state.selected.clear();
+  scheduleRender();
+}
 
 function selectAllFiltered() {
   const filtered = getFiltered();
-  const allSel   = filtered.every(d => state.selected.has(d.id));
+  const allSel = filtered.every(d => state.selected.has(d.id));
   if (allSel) filtered.forEach(d => state.selected.delete(d.id));
-  else        filtered.forEach(d => state.selected.add(d.id));
+  else filtered.forEach(d => state.selected.add(d.id));
   scheduleRender();
 }
 
@@ -1399,10 +1863,17 @@ function selectAllFiltered() {
  * - `bodyEl` : optional DOM node/fragment to append directly
  * No raw HTML accepted. All dynamic content uses textContent or pre-built DOM.
  */
-function showModal({ title, body, bodyEl, confirmLabel = 'Confirm', confirmCls = 'danger-btn', icon = '' }) {
+function showModal({
+  title,
+  body,
+  bodyEl,
+  confirmLabel = 'Confirm',
+  confirmCls = 'danger-btn',
+  icon = ''
+}) {
   return new Promise(resolve => {
     modalState.lastFocused = document.activeElement;
-    modalState.resolve     = resolve;
+    modalState.resolve = resolve;
     setText('#modal-icon', icon);
     setText('#modal-title', title);
 
@@ -1440,9 +1911,9 @@ function closeModal(confirmed) {
    ───────────────────────────────────────────────────────────────────────── */
 const TOAST_ICONS = {
   success: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
-  error:   `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  error: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
   warning: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
-  info:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+  info: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
 };
 
 function toast(message, type = 'info', duration = 4000) {
@@ -1473,7 +1944,9 @@ function toast(message, type = 'info', duration = 4000) {
 function removeToast(t) {
   if (!t.isConnected || t.classList.contains('toast-removing')) return;
   t.classList.add('toast-removing');
-  t.addEventListener('animationend', () => t.remove(), { once: true });
+  t.addEventListener('animationend', () => t.remove(), {
+    once: true
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1490,7 +1963,13 @@ function ctxSvg(paths) {
   return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 }
 
-function addCtxItem(menu, { iconHtml, label, onClick, danger = false, disabled = false }) {
+function addCtxItem(menu, {
+  iconHtml,
+  label,
+  onClick,
+  danger = false,
+  disabled = false
+}) {
   const btn = document.createElement('button');
   btn.className = ['ctx-item', danger ? 'ctx-danger' : '', disabled ? 'ctx-disabled' : ''].filter(Boolean).join(' ');
   btn.type = 'button';
@@ -1505,7 +1984,10 @@ function addCtxItem(menu, { iconHtml, label, onClick, danger = false, disabled =
   lbl.textContent = label;
 
   btn.append(iconEl, lbl);
-  if (!disabled && onClick) btn.addEventListener('click', () => { hideCtx(); onClick(); });
+  if (!disabled && onClick) btn.addEventListener('click', () => {
+    hideCtx();
+    onClick();
+  });
   attachRipple(btn);
   menu.appendChild(btn);
 }
@@ -1525,9 +2007,18 @@ function trapTab(e) {
   const focusable = $$('button:not(:disabled), [href], input, select', overlay);
   if (!focusable.length) return;
   const first = focusable[0];
-  const last  = focusable[focusable.length - 1];
-  if (e.shiftKey) { if (document.activeElement === first) { last.focus(); e.preventDefault(); } }
-  else            { if (document.activeElement === last)  { first.focus(); e.preventDefault(); } }
+  const last = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) {
+      last.focus();
+      e.preventDefault();
+    }
+  } else {
+    if (document.activeElement === last) {
+      first.focus();
+      e.preventDefault();
+    }
+  }
 }
 
 function showCtxMenu(e, item) {
@@ -1535,54 +2026,139 @@ function showCtxMenu(e, item) {
   hideCtx();
 
   const isComplete = item.state === 'complete' && item.exists !== false;
-  const isMissing  = item.state === 'complete' && item.exists === false;
-  const isActive   = item.state === 'in_progress';
-  const canAgain   = Boolean(item.finalUrl || item.url);
-  const menu       = $('#context-menu');
-  menu.innerHTML   = '';
+  const isMissing = item.state === 'complete' && item.exists === false;
+  const isActive = item.state === 'in_progress';
+  const canAgain = Boolean(item.finalUrl || item.url);
+  const menu = $('#context-menu');
+  menu.innerHTML = '';
   menu.classList.remove('hidden');
   menu.setAttribute('role', 'menu');
 
   if (isComplete) {
-    addCtxItem(menu, { iconHtml: ctxSvg('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>'), label:msg('ctx_open_file'), onClick:()=>openFile(item.id) });
-    addCtxItem(menu, { iconHtml: ctxSvg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'), label:msg('ctx_reveal_folder'), onClick:()=>revealFile(item.id) });
+    addCtxItem(menu, {
+      iconHtml: ctxSvg(
+        '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>'
+        ),
+      label: msg('ctx_open_file'),
+      onClick: () => openFile(item.id)
+    });
+    addCtxItem(menu, {
+      iconHtml: ctxSvg('<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'),
+      label: msg('ctx_reveal_folder'),
+      onClick: () => revealFile(item.id)
+    });
     ctxDiv(menu);
   }
   if (isActive) {
-    addCtxItem(menu, { iconHtml: item.paused
-      ? ctxSvg('<polygon points="5 3 19 12 5 21 5 3"/>')
-      : ctxSvg('<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'),
+    addCtxItem(menu, {
+      iconHtml: item.paused ?
+        ctxSvg('<polygon points="5 3 19 12 5 21 5 3"/>') : ctxSvg(
+          '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>'),
       label: item.paused ? 'Resume' : 'Pause',
-      onClick: () => item.paused ? resumeDl(item.id) : pauseDl(item.id) });
-    addCtxItem(menu, { iconHtml: ctxSvg('<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'), label:msg('ctx_cancel_download'), danger:true, onClick:()=>cancelDl(item.id) });
+      onClick: () => item.paused ? resumeDl(item.id) : pauseDl(item.id)
+    });
+    addCtxItem(menu, {
+      iconHtml: ctxSvg(
+        '<circle cx="12" cy="12" r="9"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>'
+        ),
+      label: msg('ctx_cancel_download'),
+      danger: true,
+      onClick: () => cancelDl(item.id)
+    });
     ctxDiv(menu);
   }
   if (canAgain && !isActive) {
-    addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'), label:msg('ctx_download_again'), onClick:()=>dlAgain(item) });
+    addCtxItem(menu, {
+      iconHtml: ctxSvg('<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>'),
+      label: msg('ctx_download_again'),
+      onClick: () => dlAgain(item)
+    });
     ctxDiv(menu);
   }
-  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="5" y1="3" x2="19" y2="21"/>'), label:msg('ctx_remove_history'), onClick:()=>eraseHistory(item.id) });
-  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'), label:msg('ctx_delete_from_disk'), disabled:!isComplete||isMissing, onClick:()=>deleteFromDisk(item.id) });
-  addCtxItem(menu, { iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'), label:msg('ctx_delete_and_erase'), danger:true, disabled:!isComplete||isMissing, onClick:()=>deleteAndErase(item.id) });
+  addCtxItem(menu, {
+    iconHtml: ctxSvg(
+      '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="5" y1="3" x2="19" y2="21"/>'
+      ),
+    label: msg('ctx_remove_history'),
+    disabled: isActive,
+    onClick: () => eraseHistory(item.id)
+  });
+  addCtxItem(menu, {
+    iconHtml: ctxSvg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+    label: msg('ctx_delete_from_disk'),
+    disabled: !isComplete || isMissing,
+    onClick: () => deleteFromDisk(item.id)
+  });
+  addCtxItem(menu, {
+    iconHtml: ctxSvg(
+      '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'
+      ),
+    label: msg('ctx_delete_and_erase'),
+    danger: true,
+    disabled: !isComplete || isMissing,
+    onClick: () => deleteAndErase(item.id)
+  });
   ctxDiv(menu);
-  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:msg('ctx_copy_url'), disabled:!item.url&&!item.finalUrl, onClick:async()=>{ try{ await navigator.clipboard.writeText(item.finalUrl||item.url); toast(msg('toast_url_copied'),'success'); }catch{ toast(msg('toast_clipboard_failed'),'error'); }} });
-  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:msg('ctx_copy_path'), disabled:!item.filename, onClick:async()=>{ try{ await navigator.clipboard.writeText(item.filename); toast(msg('toast_path_copied'),'success'); }catch{ toast(msg('toast_clipboard_failed'),'error'); }} });
-  addCtxItem(menu, { iconHtml: ctxSvg('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'), label:msg('ctx_copy_filename'), onClick:async()=>{ try{ await navigator.clipboard.writeText(getFilename(item)); toast(msg('toast_filename_copied'),'success'); }catch{ toast(msg('toast_clipboard_failed'),'error'); }} });
+  addCtxItem(menu, {
+    iconHtml: ctxSvg(
+      '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+      ),
+    label: msg('ctx_copy_url'),
+    disabled: !item.url && !item.finalUrl,
+    onClick: async () => {
+      try {
+        await navigator.clipboard.writeText(item.finalUrl || item.url);
+        toast(msg('toast_url_copied'), 'success');
+      } catch {
+        toast(msg('toast_clipboard_failed'), 'error');
+      }
+    }
+  });
+  addCtxItem(menu, {
+    iconHtml: ctxSvg(
+      '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+      ),
+    label: msg('ctx_copy_path'),
+    disabled: !item.filename,
+    onClick: async () => {
+      try {
+        await navigator.clipboard.writeText(item.filename);
+        toast(msg('toast_path_copied'), 'success');
+      } catch {
+        toast(msg('toast_clipboard_failed'), 'error');
+      }
+    }
+  });
+  addCtxItem(menu, {
+    iconHtml: ctxSvg(
+      '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'
+      ),
+    label: msg('ctx_copy_filename'),
+    onClick: async () => {
+      try {
+        await navigator.clipboard.writeText(getFilename(item));
+        toast(msg('toast_filename_copied'), 'success');
+      } catch {
+        toast(msg('toast_clipboard_failed'), 'error');
+      }
+    }
+  });
 
   /* Position — keep within viewport */
   document.body.appendChild(menu);
   requestAnimationFrame(() => {
-    const r  = menu.getBoundingClientRect();
+    const r = menu.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    let   x  = e.clientX;
-    let   y  = e.clientY;
-    if (x + r.width  + 10 > vw) x = vw - r.width  - 10;
+    let x = e.clientX;
+    let y = e.clientY;
+    if (x + r.width + 10 > vw) x = vw - r.width - 10;
     if (y + r.height + 10 > vh) y = vh - r.height - 10;
     menu.style.left = `${Math.max(8, x)}px`;
-    menu.style.top  = `${Math.max(8, y)}px`;
+    menu.style.top = `${Math.max(8, y)}px`;
     // Hint CSS transform-origin
-    menu.style.setProperty('--ctx-origin', `${e.clientX < vw/2 ? 'left' : 'right'} ${e.clientY < vh/2 ? 'top' : 'bottom'}`);
+    menu.style.setProperty('--ctx-origin',
+      `${e.clientX < vw/2 ? 'left' : 'right'} ${e.clientY < vh/2 ? 'top' : 'bottom'}`);
   });
 }
 
@@ -1590,24 +2166,38 @@ function showCtxMenu(e, item) {
    Download operations
    ───────────────────────────────────────────────────────────────────────── */
 async function openFile(id) {
-  try { await invoke(chrome.downloads, 'open', id); }
-  catch(e) { toast(`Could not open: ${e.message}`, 'error'); }
+  try {
+    await invoke(chrome.downloads, 'open', id);
+  } catch (e) {
+    toast(`Could not open: ${e.message}`, 'error');
+  }
 }
 
 /** Reveal in Finder/Explorer — fire-and-forget to avoid stalls on some forks */
 function revealFile(id) {
-  try { void chrome.downloads.show(id); }
-  catch(e) { toast(`Could not reveal: ${e.message}`, 'error'); }
+  try {
+    void chrome.downloads.show(id);
+  } catch (e) {
+    toast(`Could not reveal: ${e.message}`, 'error');
+  }
 }
 
 async function pauseDl(id) {
-  try { await invoke(chrome.downloads, 'pause', id);  toast(msg('toast_paused'), 'info', 2200); }
-  catch(e) { toast(`Pause failed: ${e.message}`, 'error'); }
+  try {
+    await invoke(chrome.downloads, 'pause', id);
+    toast(msg('toast_paused'), 'info', 2200);
+  } catch (e) {
+    toast(`Pause failed: ${e.message}`, 'error');
+  }
 }
 
 async function resumeDl(id) {
-  try { await invoke(chrome.downloads, 'resume', id); toast(msg('toast_resumed'), 'success', 2200); }
-  catch(e) { toast(`Resume failed: ${e.message}`, 'error'); }
+  try {
+    await invoke(chrome.downloads, 'resume', id);
+    toast(msg('toast_resumed'), 'success', 2200);
+  } catch (e) {
+    toast(`Resume failed: ${e.message}`, 'error');
+  }
 }
 
 async function cancelDl(id) {
@@ -1616,27 +2206,49 @@ async function cancelDl(id) {
   const ok = await showModal({
     title: msg('modal_cancel_download'),
     body: `"${getFilename(item)}" will stop and any partial file removed.`,
-    confirmLabel: 'Cancel download', confirmCls: 'danger-btn', icon: '⏹️',
+    confirmLabel: 'Cancel download',
+    confirmCls: 'danger-btn',
+    icon: '⏹️',
   });
   if (!ok) return;
-  try { await invoke(chrome.downloads, 'cancel', id); toast(msg('toast_cancelled'), 'info', 2800); }
-  catch(e) { toast(`Cancel failed: ${e.message}`, 'error'); }
+  try {
+    await invoke(chrome.downloads, 'cancel', id);
+    toast(msg('toast_cancelled'), 'info', 2800);
+  } catch (e) {
+    toast(`Cancel failed: ${e.message}`, 'error');
+  }
 }
 
 async function dlAgain(item) {
   const url = item.finalUrl || item.url;
-  if (!url) { toast(msg('toast_no_source_url'), 'warning'); return; }
+  if (!url) {
+    toast(msg('toast_no_source_url'), 'warning');
+    return;
+  }
   /* Fix #20: Confirm with full URL — signed/expiring URLs may have changed */
-  const urlHint = el('p', { class:'modal-url-hint', style:'word-break:break-all;font-size:0.85em;opacity:0.8;margin-top:6px', text: truncateUrl(url, 120) });
+  const urlHint = el('p', {
+    class: 'modal-url-hint',
+    style: 'word-break:break-all;font-size:0.85em;opacity:0.8;margin-top:6px',
+    text: truncateUrl(url, 120)
+  });
   const ok = await showModal({
     title: msg('modal_download_again_title'),
     body: 'This will re-download from the original URL. Signed or expiring links may no longer work.',
     bodyEl: urlHint,
-    confirmLabel: 'Download', confirmCls: 'ghost-btn', icon: '🔄',
+    confirmLabel: 'Download',
+    confirmCls: 'ghost-btn',
+    icon: '🔄',
   });
   if (!ok) return;
-  try { await invoke(chrome.downloads, 'download', { url, saveAs: true }); toast(msg('toast_download_started'), 'success'); }
-  catch(e) { toast(`Could not restart: ${e.message}`, 'error'); }
+  try {
+    await invoke(chrome.downloads, 'download', {
+      url,
+      saveAs: true
+    });
+    toast(msg('toast_download_started'), 'success');
+  } catch (e) {
+    toast(`Could not restart: ${e.message}`, 'error');
+  }
 }
 
 function markMissing(id) {
@@ -1644,41 +2256,64 @@ function markMissing(id) {
   if (item) item.exists = false;
 }
 
-async function deleteFromDisk(id, { skipConfirm = false } = {}) {
+async function deleteFromDisk(id, {
+  skipConfirm = false
+} = {}) {
   const item = state.downloads.find(d => d.id === id);
   if (!item) return false;
   if (!skipConfirm) {
     const ok = await showModal({
       title: msg('modal_delete_title'),
       body: `"${getFilename(item)}" will be permanently removed. History record stays.`,
-      confirmLabel: 'Delete file', confirmCls: 'danger-btn', icon: '🗑️',
+      confirmLabel: 'Delete file',
+      confirmCls: 'danger-btn',
+      icon: '🗑️',
     });
     if (!ok) return false;
   }
   try {
     await invoke(chrome.downloads, 'removeFile', id);
-    markMissing(id); toast(`Deleted "${getFilename(item)}".`, 'success'); scheduleRender(); return true;
-  } catch(e) {
+    markMissing(id);
+    silenceableToast(`Deleted "${getFilename(item)}".`, 'success');
+    scheduleRender();
+    return true;
+  } catch (e) {
     if (/not exist|already|No such/i.test(e.message)) {
-      markMissing(id); toast(msg('toast_file_already_missing'), 'warning'); scheduleRender(); return true;
+      markMissing(id);
+      silenceableToast(msg('toast_file_already_missing'), 'warning');
+      scheduleRender();
+      return true;
     }
-    toast(`Delete failed: ${e.message}`, 'error'); return false;
+    silenceableToast(`Delete failed: ${e.message}`, 'error');
+    return false;
   }
 }
 
-async function eraseHistory(id, { skipConfirm = false } = {}) {
+async function eraseHistory(id, {
+  skipConfirm = false
+} = {}) {
   const item = state.downloads.find(d => d.id === id);
   if (!item) return false;
   if (!skipConfirm) {
     const ok = await showModal({
       title: msg('modal_erase_title'),
       body: `"${getFilename(item)}" removed from history. File on disk untouched.`,
-      confirmLabel: 'Remove', confirmCls: 'ghost-btn', icon: '📋',
+      confirmLabel: 'Remove',
+      confirmCls: 'ghost-btn',
+      icon: '📋',
     });
     if (!ok) return false;
   }
-  try { await invoke(chrome.downloads, 'erase', { id }); toast(msg('toast_removed_history'), 'success'); return true; }
-  catch(e) { toast(`Removal failed: ${e.message}`, 'error'); return false; }
+  try {
+    await invoke(chrome.downloads, 'erase', {
+      id
+    });
+    silenceableToast(msg('toast_removed_history'), 'success');
+    return true;
+  } catch (e) {
+    silenceableToast(`Removal failed: ${e.message}`, 'error');
+    return false;
+  }
 }
 
 /**
@@ -1697,12 +2332,18 @@ async function deleteAndErase(id) {
   const ok = await showModal({
     title: msg('modal_delete_erase_title'),
     body: `${escapeHtml(getFilename(item))} will be deleted from disk and removed from history.`,
-    confirmLabel: 'Delete + remove', confirmCls: 'danger-btn', icon: '🗑️',
+    confirmLabel: 'Delete + remove',
+    confirmCls: 'danger-btn',
+    icon: '🗑️',
   });
   if (!ok) return;
-  const deleted = await deleteFromDisk(id, { skipConfirm: true });
+  const deleted = await deleteFromDisk(id, {
+    skipConfirm: true
+  });
   if (deleted) {
-    await eraseHistory(id, { skipConfirm: true });
+    await eraseHistory(id, {
+      skipConfirm: true
+    });
   } else {
     toast(msg('toast_delete_kept_history'), 'warning');
   }
@@ -1712,68 +2353,203 @@ async function deleteAndErase(id) {
    Bulk operations
    ───────────────────────────────────────────────────────────────────────── */
 async function bulkDelete() {
-  const sel  = getFiltered().filter(d => state.selected.has(d.id));
-  const elig = sel.filter(d => d.state === 'complete' && d.exists !== false);
-  if (!elig.length) { toast(msg('toast_no_eligible'), 'warning'); return; }
+  /* Use state.downloads — not getFiltered() — so the operation matches what
+     updateBulkBar checks when enabling/disabling the button.  The selection
+     set is the user's intent; the view filter should not silently gate it. */
+  const sel = state.downloads.filter(d => state.selected.has(d.id));
+  if (!sel.length) {
+    toast('No items selected.', 'warning');
+    return;
+  }
 
-  /* Build file list via DOM — no innerHTML */
+  /* Categorize items */
+  const diskItems = sel.filter(d => d.state === 'complete' && d.exists !== false);
+  const eraseOnly = sel.filter(d => d.state !== 'in_progress' && !(d.state === 'complete' && d.exists !== false));
+  const skipped = sel.filter(d => d.state === 'in_progress');
+  const total = diskItems.length + eraseOnly.length;
+
+  if (!total) {
+    toast('No eligible items.', 'warning');
+    return;
+  }
+
+  /* Build confirmation dialog */
   const frag = document.createDocumentFragment();
-  const ul = el('ul', { class: 'modal-file-list' });
-  for (const d of elig) ul.appendChild(el('li', { text: getFilename(d) }));
-  frag.appendChild(ul);
-  const skip = sel.length - elig.length;
-  if (skip) frag.appendChild(el('p', { style:'margin-top:8px', text: `${skip} item${skip === 1 ? '' : 's'} skipped (not complete or already missing).` }));
+  if (diskItems.length) {
+    frag.appendChild(el('p', {
+      style: 'margin-top:4px;font-weight:600;font-size:12px',
+      text: `${diskItems.length} file${diskItems.length === 1 ? '' : 's'} deleted from disk + history:`
+    }));
+    const ul1 = el('ul', {
+      class: 'modal-file-list'
+    });
+    for (const d of diskItems.slice(0, 20)) ul1.appendChild(el('li', {
+      text: getFilename(d)
+    }));
+    if (diskItems.length > 20) ul1.appendChild(el('li', {
+      text: `… and ${diskItems.length - 20} more`,
+      style: 'opacity:0.6'
+    }));
+    frag.appendChild(ul1);
+  }
+  if (eraseOnly.length) {
+    frag.appendChild(el('p', {
+      style: 'margin-top:8px;font-size:11.5px;color:var(--text-dim)',
+      text: `${eraseOnly.length} failed/missing item${eraseOnly.length === 1 ? '' : 's'} removed from history only.`
+    }));
+  }
+  if (skipped.length) {
+    frag.appendChild(el('p', {
+      style: 'margin-top:6px;font-size:11px;opacity:0.65',
+      text: `${skipped.length} active download${skipped.length === 1 ? '' : 's'} skipped.`
+    }));
+  }
 
   const ok = await showModal({
-    title: `Delete + remove ${elig.length} item${elig.length === 1 ? '' : 's'}?`,
-    body: 'Files will be deleted from disk and removed from history.',
+    title: `Delete ${total} item${total === 1 ? '' : 's'}?`,
+    body: diskItems.length ? 'Files will be permanently deleted from disk.' :
+      'Items will be removed from history.',
     bodyEl: frag,
-    confirmLabel: `Delete ${elig.length}`, confirmCls: 'danger-btn', icon: '🗑️',
+    confirmLabel: `Delete (${diskItems.length})`,
+    confirmCls: 'danger-btn',
+    icon: '🗑️',
   });
   if (!ok) return;
 
-  /* Fix #1 + #19: Transactional per-item + progress toast + chunked yields */
-  let deleted = 0;
-  let erased  = 0;
-  let failed  = 0;
-  const CHUNK = 10;
+  /* Run with progress, abort support, and suppressed per-item toasts */
+  const abortCtrl = new AbortController();
+  _bulkAbort = abortCtrl;
+  _bulkSilent = true;
 
-  for (let i = 0; i < elig.length; i++) {
-    const d = elig[i];
-    const diskOk = await deleteFromDisk(d.id, { skipConfirm: true });
-    if (diskOk) {
-      deleted++;
-      const eraseOk = await eraseHistory(d.id, { skipConfirm: true });
-      if (eraseOk) erased++;
-    } else {
-      failed++;
+  let deleted = 0,
+    erased = 0,
+    failed = 0;
+  const allItems = [...diskItems, ...eraseOnly];
+
+  try {
+    for (let i = 0; i < allItems.length; i++) {
+      if (abortCtrl.signal.aborted) break;
+
+      const d = allItems[i];
+      const isDisk = diskItems.includes(d);
+
+      if (isDisk) {
+        const diskOk = await deleteFromDisk(d.id, {
+          skipConfirm: true
+        });
+        if (diskOk) {
+          deleted++;
+          await eraseHistory(d.id, {
+            skipConfirm: true
+          });
+        } else {
+          failed++;
+        }
+      } else {
+        const ok2 = await eraseHistory(d.id, {
+          skipConfirm: true
+        });
+        if (ok2) erased++;
+        else failed++;
+      }
+
+      setBulkProgress(i + 1, allItems.length, `${i + 1} / ${allItems.length}`);
+
+      /* Yield every 8 items for UI responsiveness */
+      if ((i + 1) % 8 === 0) await new Promise(r => requestAnimationFrame(r));
     }
-    /* Yield to UI every CHUNK items for responsiveness */
-    if ((i + 1) % CHUNK === 0) {
-      await new Promise(r => requestAnimationFrame(r));
-    }
+  } finally {
+    _bulkSilent = false;
+    _bulkAbort = null;
+    setBulkProgress(null);
   }
 
-  if (failed === 0) {
-    toast(`Deleted ${deleted} of ${elig.length}.`, 'success');
-  } else {
-    toast(`Deleted ${deleted}, failed ${failed} — history kept for failures.`, 'warning');
-  }
+  const aborted = abortCtrl.signal.aborted;
+  const parts = [];
+  if (deleted) parts.push(`${deleted} deleted`);
+  if (erased) parts.push(`${erased} cleared`);
+  if (failed) parts.push(`${failed} failed`);
+  if (aborted) parts.push('stopped early');
+
+  toast(parts.join(', ') + '.', failed || aborted ? 'warning' : 'success');
   clearSel();
 }
 
 async function bulkErase() {
-  const ids = [...state.selected];
-  if (!ids.length) return;
+  /* Use state.downloads — matches updateBulkBar's source for button state */
+  const sel = state.downloads.filter(d => state.selected.has(d.id));
+  if (!sel.length) {
+    toast('No items selected.', 'warning');
+    return;
+  }
+  const elig = sel.filter(d => d.state !== 'in_progress');
+  const skip = sel.length - elig.length;
+
+  if (!elig.length) {
+    toast('No eligible items.', 'warning');
+    return;
+  }
+
+  /* Build confirmation */
+  const bodyEl = document.createDocumentFragment();
+  const ul = el('ul', {
+    class: 'modal-file-list'
+  });
+  for (const d of elig.slice(0, 20)) ul.appendChild(el('li', {
+    text: getFilename(d)
+  }));
+  if (elig.length > 20) ul.appendChild(el('li', {
+    text: `… and ${elig.length - 20} more`,
+    style: 'opacity:0.6'
+  }));
+  bodyEl.appendChild(ul);
+  if (skip) bodyEl.appendChild(el('p', {
+    style: 'margin-top:6px;font-size:11px;opacity:0.65',
+    text: `${skip} active download${skip === 1 ? '' : 's'} skipped.`
+  }));
+
   const ok = await showModal({
-    title: `Remove ${ids.length} from history?`,
+    title: `Remove ${elig.length} from history?`,
     body: 'Files on disk are untouched.',
-    confirmLabel: 'Remove history', confirmCls: 'ghost-btn', icon: '📋',
+    bodyEl,
+    confirmLabel: `Remove (${elig.length - skip})`,
+    confirmCls: 'ghost-btn',
+    icon: '📋',
   });
   if (!ok) return;
-  let done = 0;
-  for (const id of ids) { if (await eraseHistory(id, { skipConfirm: true })) done++; }
-  toast(`Removed ${done}.`, 'success');
+
+  const abortCtrl = new AbortController();
+  _bulkAbort = abortCtrl;
+  _bulkSilent = true;
+
+  let done = 0,
+    failed = 0;
+
+  try {
+    for (let i = 0; i < elig.length; i++) {
+      if (abortCtrl.signal.aborted) break;
+
+      if (await eraseHistory(elig[i].id, {
+          skipConfirm: true
+        })) done++;
+      else failed++;
+
+      setBulkProgress(i + 1, elig.length, `${i + 1} / ${elig.length}`);
+      if ((i + 1) % 12 === 0) await new Promise(r => requestAnimationFrame(r));
+    }
+  } finally {
+    _bulkSilent = false;
+    _bulkAbort = null;
+    setBulkProgress(null);
+  }
+
+  const aborted = abortCtrl.signal.aborted;
+  const parts = [`${done} removed`];
+  if (failed) parts.push(`${failed} failed`);
+  if (skip) parts.push(`${skip} skipped`);
+  if (aborted) parts.push('stopped early');
+
+  toast(parts.join(', ') + '.', failed || aborted ? 'warning' : 'success');
   clearSel();
 }
 
@@ -1782,15 +2558,26 @@ async function clearAll() {
   const ok = await showModal({
     title: msg('modal_clear_all_title'),
     body: `All ${state.downloads.length} records removed. Files on disk unaffected.`,
-    confirmLabel: 'Clear history', confirmCls: 'ghost-btn', icon: '🗂️',
+    confirmLabel: 'Clear history',
+    confirmCls: 'ghost-btn',
+    icon: '🗂️',
   });
   if (!ok) return;
   try {
     await invoke(chrome.downloads, 'erase', {});
-    state.downloads = []; speedHistory.clear(); _cardCache.clear();
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    clearSel(); scheduleRender(); toast(msg('toast_history_cleared'), 'success');
-  } catch(e) { toast(`Failed: ${e.message}`, 'error'); }
+    state.downloads = [];
+    speedHistory.clear();
+    _cardCache.clear();
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    clearSel();
+    scheduleRender();
+    toast(msg('toast_history_cleared'), 'success');
+  } catch (e) {
+    toast(`Failed: ${e.message}`, 'error');
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1821,16 +2608,20 @@ function closeMobileSidebar() {
    Prefs
    ───────────────────────────────────────────────────────────────────────── */
 function persistPrefs() {
-  invoke(chrome.storage.local, 'set', { [PREFS_KEY]: {
-    sortBy:           state.sortBy,
-    filterStatus:     state.filterStatus,
-    sidebarCollapsed: $('#app').classList.contains('sidebar-collapsed'),
-  }}).catch(() => {});
+  invoke(chrome.storage.local, 'set', {
+    [PREFS_KEY]: {
+      sortBy: state.sortBy,
+      filterStatus: state.filterStatus,
+      sidebarCollapsed: $('#app').classList.contains('sidebar-collapsed'),
+    }
+  }).catch(() => {});
 }
 
 async function restorePrefs() {
   try {
-    const r = await invoke(chrome.storage.local, 'get', { [PREFS_KEY]: null });
+    const r = await invoke(chrome.storage.local, 'get', {
+      [PREFS_KEY]: null
+    });
     const p = r?.[PREFS_KEY];
     if (!p) return;
     if (p.sortBy && SORT_FNS[p.sortBy]) state.sortBy = p.sortBy;
@@ -1839,18 +2630,26 @@ async function restorePrefs() {
       $('#app').classList.add('sidebar-collapsed');
       setAttr('#btn-sidebar-toggle', 'aria-expanded', 'false');
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
    Load / refresh
    ───────────────────────────────────────────────────────────────────────── */
-async function loadDownloads({ silent = false } = {}) {
+async function loadDownloads({
+  silent = false
+} = {}) {
   if (!silent) state.isLoading = true;
   try {
-    const items = await invoke(chrome.downloads, 'search', { orderBy: ['-startTime'] });
+    const items = await invoke(chrome.downloads, 'search', {
+      orderBy: ['-startTime']
+    });
     state.downloads = Array.isArray(items) ? items : [];
-  } finally { state.isLoading = false; }
+  } finally {
+    state.isLoading = false;
+  }
 }
 
 async function refresh() {
@@ -1859,11 +2658,17 @@ async function refresh() {
   const btn = $('#btn-refresh');
   if (btn) btn.setAttribute('aria-busy', 'true');
   try {
-    await loadDownloads({ silent: true });
+    await loadDownloads({
+      silent: true
+    });
     toast(msg('toast_refreshed'), 'info', 2400);
     scheduleRender();
-  } catch(e) { toast(`Refresh failed: ${e.message}`, 'error'); }
-  finally { state.isRefreshing = false; if (btn) btn.removeAttribute('aria-busy'); }
+  } catch (e) {
+    toast(`Refresh failed: ${e.message}`, 'error');
+  } finally {
+    state.isRefreshing = false;
+    if (btn) btn.removeAttribute('aria-busy');
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -1883,7 +2688,7 @@ function bindChrome() {
     if (!item) return;
 
     // Snapshot before applying delta
-    const prevState  = item.state;
+    const prevState = item.state;
     const prevPaused = item.paused;
 
     // Apply delta to cached state
@@ -1905,13 +2710,12 @@ function bindChrome() {
     startPollIfNeeded();
 
     // Decide: progress-only patch (no structural change) vs full render
-    const stateChanged  = item.state  !== prevState;
-    const pauseChanged  = item.paused !== prevPaused;
+    const stateChanged = item.state !== prevState;
+    const pauseChanged = item.paused !== prevPaused;
     const hasFilenameChange = Boolean(delta.filename);
-    const hasError          = Boolean(delta.error);
+    const hasError = Boolean(delta.error);
 
-    const isProgressOnly =
-      !stateChanged &&
+    const isProgressOnly = !stateChanged &&
       !pauseChanged &&
       !hasFilenameChange &&
       !hasError &&
@@ -1953,18 +2757,18 @@ function bindChrome() {
 /* ─────────────────────────────────────────────────────────────────────────
    Theme management — four modes
    ───────────────────────────────────────────────────────────────────────── */
-const THEME_MODES  = ['auto', 'light', 'dark', 'midnight'];
+const THEME_MODES = ['auto', 'light', 'dark', 'midnight'];
 const THEME_LABELS = {
-  auto:     msg('theme_automatic'),
-  light:    msg('theme_beige'),
-  dark:     msg('theme_dark'),
+  auto: msg('theme_automatic'),
+  light: msg('theme_beige'),
+  dark: msg('theme_dark'),
   midnight: msg('theme_midnight'),
 };
 /* color-scheme hint for each mode (affects browser chrome: scrollbars, inputs) */
 const THEME_COLOR_SCHEME = {
-  auto:     'light',
-  light:    'light',
-  dark:     'dark',
+  auto: 'light',
+  light: 'light',
+  dark: 'dark',
   midnight: 'dark',
 };
 
@@ -1991,12 +2795,16 @@ function applyTheme(mode) {
   if (labelEl) labelEl.textContent = THEME_LABELS[mode] || mode;
 
   /* Persist */
-  invoke(chrome.storage.local, 'set', { dlMgrTheme: mode }).catch(() => {});
+  invoke(chrome.storage.local, 'set', {
+    dlMgrTheme: mode
+  }).catch(() => {});
 }
 
 async function restoreTheme() {
   try {
-    const r = await invoke(chrome.storage.local, 'get', { dlMgrTheme: 'auto' });
+    const r = await invoke(chrome.storage.local, 'get', {
+      dlMgrTheme: 'auto'
+    });
     const saved = r?.dlMgrTheme;
     applyTheme(THEME_MODES.includes(saved) ? saved : 'auto');
   } catch {
@@ -2009,11 +2817,22 @@ async function restoreTheme() {
    ───────────────────────────────────────────────────────────────────────── */
 /** Category colour map matching ICON_DEFS */
 const EXT_COLORS = {
-  image:'#a78bfa', video:'#f87171', audio:'#34d399', pdf:'#f87171',
-  doc:'#60a5fa',   sheet:'#4ade80', slide:'#fb923c', archive:'#fbbf24',
-  code:'#22d3ee',  exe:'#94a3b8',   font:'#c084fc',  disk:'#f472b6',
-  torrent:'#38bdf8', generic:'#64748b',
+  image: '#a78bfa',
+  video: '#f87171',
+  audio: '#34d399',
+  pdf: '#f87171',
+  doc: '#60a5fa',
+  sheet: '#4ade80',
+  slide: '#fb923c',
+  archive: '#fbbf24',
+  code: '#22d3ee',
+  exe: '#94a3b8',
+  font: '#c084fc',
+  disk: '#f472b6',
+  torrent: '#38bdf8',
+  generic: '#64748b',
 };
+
 function getExtColor(ext) {
   const cat = EXT_MAP[ext.toLowerCase()] || 'generic';
   return EXT_COLORS[cat] || EXT_COLORS.generic;
@@ -2029,15 +2848,18 @@ function getAvailableExtensions() {
   }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([ext, count]) => ({ ext, count }));
+    .map(([ext, count]) => ({
+      ext,
+      count
+    }));
 }
 
 function buildExtChips() {
   const chipList = $('#ext-chip-list');
-  const popover  = $('#ext-popover');
-  const btn      = $('#btn-ext-filter');
+  const popover = $('#ext-popover');
+  const btn = $('#btn-ext-filter');
   const clearBtn = $('#btn-clear-ext');
-  const lbl      = $('#ext-filter-label');
+  const lbl = $('#ext-filter-label');
   if (!chipList) return;
 
   const exts = getAvailableExtensions();
@@ -2046,9 +2868,13 @@ function buildExtChips() {
   if (btn) btn.classList.toggle('hidden', !exts.length);
 
   chipList.innerHTML = '';
-  for (const { ext, count } of exts) {
+  for (const {
+      ext,
+      count
+    }
+    of exts) {
     const chip = document.createElement('button');
-    chip.type      = 'button';
+    chip.type = 'button';
     chip.className = 'ext-chip' + (state.extFilter === ext ? ' active' : '');
     chip.dataset.ext = ext;
     chip.setAttribute('aria-pressed', String(state.extFilter === ext));
@@ -2076,8 +2902,8 @@ function buildExtChips() {
 
   const isFiltered = state.extFilter !== 'all';
   if (clearBtn) clearBtn.classList.toggle('hidden', !isFiltered);
-  if (btn)      btn.classList.toggle('is-active', isFiltered);
-  if (lbl)      lbl.textContent = isFiltered ? state.extFilter.toUpperCase() : 'All types';
+  if (btn) btn.classList.toggle('is-active', isFiltered);
+  if (lbl) lbl.textContent = isFiltered ? state.extFilter.toUpperCase() : 'All types';
 
   // Update visible count bar accent
   const vcBar = $('#visible-count-bar');
@@ -2086,11 +2912,16 @@ function buildExtChips() {
 
 function applyExtFilter(ext) {
   state.extFilter = ext || 'all';
-  resetRenderCount(); pruneSelection(); scheduleRender();
+  resetRenderCount();
+  pruneSelection();
+  scheduleRender();
 }
 
 /** Fix #23: Module-level ext menu controller — set by wireMenuKeyboard in wire() */
-let _extMenuCtrl = { activate() {}, deactivate() {} };
+let _extMenuCtrl = {
+  activate() {},
+  deactivate() {}
+};
 
 function openExtPopover() {
   const p = $('#ext-popover');
@@ -2099,6 +2930,7 @@ function openExtPopover() {
   if (b) b.setAttribute('aria-expanded', 'true');
   _extMenuCtrl.activate();
 }
+
 function closeExtPopover() {
   const p = $('#ext-popover');
   const b = $('#btn-ext-filter');
@@ -2107,6 +2939,7 @@ function closeExtPopover() {
   _extMenuCtrl.deactivate();
   $('#btn-ext-filter')?.focus();
 }
+
 function toggleExtPopover() {
   const p = $('#ext-popover');
   if (!p) return;
@@ -2121,12 +2954,12 @@ function wire() {
 
   // ── Date filter popover ──────────────────────────────────
   const dateFilterWrap = $('#date-filter-wrap');
-  const datePopover    = $('#date-popover');
-  const btnDateFilter  = $('#btn-date-filter');
-  const btnClearDate   = $('#btn-clear-date');
-  const dateFromEl     = $('#date-from');
-  const dateToEl       = $('#date-to');
-  const dateFilterLbl  = $('#date-filter-label');
+  const datePopover = $('#date-popover');
+  const btnDateFilter = $('#btn-date-filter');
+  const btnClearDate = $('#btn-clear-date');
+  const dateFromEl = $('#date-from');
+  const dateToEl = $('#date-to');
+  const dateFilterLbl = $('#date-filter-label');
 
   syncDateInputs();
 
@@ -2135,10 +2968,12 @@ function wire() {
     datePopover.classList.remove('hidden');
     if (btnDateFilter) btnDateFilter.setAttribute('aria-expanded', 'true');
   }
+
   function closeDatePopover() {
     datePopover.classList.add('hidden');
     if (btnDateFilter) btnDateFilter.setAttribute('aria-expanded', 'false');
   }
+
   function toggleDatePopover() {
     datePopover.classList.contains('hidden') ? openDatePopover() : closeDatePopover();
   }
@@ -2148,7 +2983,7 @@ function wire() {
     const max = state.availableDateMax;
     state.dateFilterMode = mode;
     state.dateFrom = mode === 'range' ? clampIsoDate(from || min, min, max) : null;
-    state.dateTo   = mode === 'range' ? clampIsoDate(to || max, min, max) : null;
+    state.dateTo = mode === 'range' ? clampIsoDate(to || max, min, max) : null;
 
     if (mode === 'range' && state.dateFrom && state.dateTo && state.dateFrom > state.dateTo) {
       state.dateTo = state.dateFrom;
@@ -2159,11 +2994,17 @@ function wire() {
     );
 
     if (mode === 'range' && state.dateFrom && state.dateTo) {
-      if (dateFilterLbl) dateFilterLbl.textContent = `${formatDateInputLabel(state.dateFrom)} – ${formatDateInputLabel(state.dateTo)}`;
+      if (dateFilterLbl) dateFilterLbl.textContent =
+        `${formatDateInputLabel(state.dateFrom)} – ${formatDateInputLabel(state.dateTo)}`;
       dateFromEl.value = state.dateFrom;
       dateToEl.value = state.dateTo;
     } else {
-      const labels = { all: 'To date', today: 'Today', yesterday: 'Yesterday', range: 'Custom range' };
+      const labels = {
+        all: 'To date',
+        today: 'Today',
+        yesterday: 'Yesterday',
+        range: 'Custom range'
+      };
       if (dateFilterLbl) dateFilterLbl.textContent = labels[mode] || 'To date';
       syncDateInputs();
     }
@@ -2171,24 +3012,35 @@ function wire() {
     const isFiltered = mode !== 'all';
     if (btnClearDate) btnClearDate.classList.toggle('hidden', !isFiltered);
     if (btnDateFilter) btnDateFilter.classList.toggle('is-active', isFiltered);
-    resetRenderCount(); pruneSelection(); scheduleRender();
+    resetRenderCount();
+    pruneSelection();
+    scheduleRender();
     closeDatePopover();
   }
 
-  btnDateFilter.addEventListener('click', e => { e.stopPropagation(); toggleDatePopover(); });
+  btnDateFilter.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleDatePopover();
+  });
 
   $$('.date-opt', datePopover).forEach(btn => {
     btn.addEventListener('click', () => applyDateMode(btn.dataset.dateOpt));
   });
 
-  dateFromEl.addEventListener('input', () => syncDateInputs({ source: 'from' }));
-  dateToEl.addEventListener('input', () => syncDateInputs({ source: 'to' }));
+  dateFromEl.addEventListener('input', () => syncDateInputs({
+    source: 'from'
+  }));
+  dateToEl.addEventListener('input', () => syncDateInputs({
+    source: 'to'
+  }));
 
   $('#btn-apply-range').addEventListener('click', () => {
     syncDateInputs();
     if (!state.availableDateMin || !state.availableDateMax) return;
-    const from = clampIsoDate(dateFromEl.value || state.availableDateMin, state.availableDateMin, state.availableDateMax);
-    const to   = clampIsoDate(dateToEl.value || state.availableDateMax, state.availableDateMin, state.availableDateMax);
+    const from = clampIsoDate(dateFromEl.value || state.availableDateMin, state.availableDateMin, state
+      .availableDateMax);
+    const to = clampIsoDate(dateToEl.value || state.availableDateMax, state.availableDateMin, state
+      .availableDateMax);
     applyDateMode('range', from, to);
   });
 
@@ -2204,11 +3056,16 @@ function wire() {
     btn.addEventListener('click', () => applyTheme(btn.dataset.themeOption));
   });
   // Ext filter trigger
-  $('#btn-ext-filter')?.addEventListener('click', e => { e.stopPropagation(); toggleExtPopover(); });
+  $('#btn-ext-filter')?.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleExtPopover();
+  });
   /* Fix #23: Full ARIA menu keyboard pattern for ext filter popover */
   _extMenuCtrl = wireMenuKeyboard($('#ext-popover'), '.ext-chip', closeExtPopover);
   // Ext clear
-  $('#btn-clear-ext')?.addEventListener('click', () => { applyExtFilter('all'); });
+  $('#btn-clear-ext')?.addEventListener('click', () => {
+    applyExtFilter('all');
+  });
   // Close ext popover on outside click (added to existing click handler below)
   $('#btn-refresh').addEventListener('click', refresh);
   $('#btn-load-more').addEventListener('click', () => {
@@ -2216,13 +3073,18 @@ function wire() {
     scheduleRender();
   });
   $('#btn-open-tab').addEventListener('click', async () => {
-    const r = await sendMsg({ type: 'downloads-manager:open-tab' });
+    const r = await sendMsg({
+      type: 'downloads-manager:open-tab'
+    });
     if (!r?.ok) toast(msg('toast_could_not_open_tab'), 'error');
   });
   $('#btn-clear-all').addEventListener('click', clearAll);
   $('#btn-bulk-delete').addEventListener('click', bulkDelete);
   $('#btn-bulk-erase').addEventListener('click', bulkErase);
   $('#btn-cancel-select').addEventListener('click', clearSel);
+  $('#btn-bulk-abort')?.addEventListener('click', () => {
+    if (_bulkAbort) _bulkAbort.abort();
+  });
   $('#select-all').addEventListener('change', selectAllFiltered);
 
   const searchInput = $('#search-input');
@@ -2240,17 +3102,17 @@ function wire() {
   });
 
   // ── Sort popover ─────────────────────────────────────────
-  const sortWrap    = $('#sort-filter-wrap');
+  const sortWrap = $('#sort-filter-wrap');
   const sortPopover = $('#sort-popover');
-  const btnSort     = $('#btn-sort');
+  const btnSort = $('#btn-sort');
 
   const SORT_NAMES = {
     'date-desc': msg('sort_newest'),
-    'date-asc':  msg('sort_oldest'),
-    'name-asc':  msg('sort_name_asc'),
+    'date-asc': msg('sort_oldest'),
+    'name-asc': msg('sort_name_asc'),
     'name-desc': msg('sort_name_desc'),
     'size-desc': msg('sort_largest'),
-    'size-asc':  msg('sort_smallest'),
+    'size-asc': msg('sort_smallest'),
   };
 
   function openSortPopover() {
@@ -2259,6 +3121,7 @@ function wire() {
     btnSort?.setAttribute('aria-expanded', 'true');
     sortMenuCtrl.activate();
   }
+
   function closeSortPopover() {
     if (!sortPopover) return;
     sortPopover.classList.add('hidden');
@@ -2266,9 +3129,11 @@ function wire() {
     sortMenuCtrl.deactivate();
     btnSort?.focus();
   }
+
   function toggleSortPopover() {
     sortPopover?.classList.contains('hidden') ? openSortPopover() : closeSortPopover();
   }
+
   function syncSortPopover(sortKey) {
     const lbl = $('#sort-label');
     if (lbl) lbl.textContent = SORT_NAMES[sortKey] || sortKey;
@@ -2277,7 +3142,10 @@ function wire() {
     });
   }
 
-  btnSort?.addEventListener('click', e => { e.stopPropagation(); toggleSortPopover(); });
+  btnSort?.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleSortPopover();
+  });
 
   /* Fix #23: Full ARIA menu keyboard pattern for sort popover */
   const sortMenuCtrl = wireMenuKeyboard(sortPopover, '.sort-opt', closeSortPopover);
@@ -2285,7 +3153,10 @@ function wire() {
   $$('.sort-opt', sortPopover).forEach(opt => {
     opt.addEventListener('click', () => {
       const key = opt.dataset.sort;
-      if (key) { applySort(key); syncSortPopover(key); }
+      if (key) {
+        applySort(key);
+        syncSortPopover(key);
+      }
       closeSortPopover();
     });
   });
@@ -2306,7 +3177,7 @@ function wire() {
   $('#btn-sidebar-close').addEventListener('click', closeMobileSidebar);
   $('#sidebar-overlay').addEventListener('click', closeMobileSidebar);
 
-  $('#modal-cancel').addEventListener('click',  () => closeModal(false));
+  $('#modal-cancel').addEventListener('click', () => closeModal(false));
   $('#modal-confirm').addEventListener('click', () => closeModal(true));
   $('#modal-overlay').addEventListener('click', e => {
     if (e.target === $('#modal-overlay')) closeModal(false);
@@ -2318,37 +3189,63 @@ function wire() {
     if (!e.target.closest('#sort-filter-wrap')) closeSortPopover();
     if (!e.target.closest('#date-filter-wrap')) {
       $('#date-popover')?.classList.add('hidden');
-      $('#btn-date-filter')?.setAttribute('aria-expanded','false');
+      $('#btn-date-filter')?.setAttribute('aria-expanded', 'false');
     }
   });
 
   document.addEventListener('keydown', e => {
     trapTab(e);
-    const inSearch  = document.activeElement === searchInput;
+    const inSearch = document.activeElement === searchInput;
     const modalOpen = !$('#modal-overlay').classList.contains('hidden');
 
     if (e.key === 'Escape') {
-      if (modalOpen) { closeModal(false); return; }
-      if (!$('#context-menu').classList.contains('hidden')) { hideCtx(); return; }
-      if (!$('#sort-popover')?.classList.contains('hidden')) { closeSortPopover(); return; }
-      if (state.selected.size > 0) { clearSel(); return; }
-      if ($('#app').classList.contains('sidebar-open')) { closeMobileSidebar(); return; }
+      if (modalOpen) {
+        closeModal(false);
+        return;
+      }
+      if (!$('#context-menu').classList.contains('hidden')) {
+        hideCtx();
+        return;
+      }
+      if (!$('#sort-popover')?.classList.contains('hidden')) {
+        closeSortPopover();
+        return;
+      }
+      if (state.selected.size > 0) {
+        clearSel();
+        return;
+      }
+      if ($('#app').classList.contains('sidebar-open')) {
+        closeMobileSidebar();
+        return;
+      }
       return;
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-      e.preventDefault(); searchInput.focus(); searchInput.select(); return;
+      e.preventDefault();
+      searchInput.focus();
+      searchInput.select();
+      return;
     }
     if (e.key === 'F5' && !inSearch && !modalOpen) {
-      e.preventDefault(); refresh(); return;
+      e.preventDefault();
+      refresh();
+      return;
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !inSearch && !modalOpen) {
-      e.preventDefault(); selectAllFiltered(); return;
+      e.preventDefault();
+      selectAllFiltered();
+      return;
     }
     if (e.key === 'Delete' && state.selected.size > 0 && !inSearch && !modalOpen) {
-      e.preventDefault(); bulkDelete(); return;
+      e.preventDefault();
+      bulkDelete();
+      return;
     }
     if (e.altKey && e.key.toLowerCase() === 's' && !modalOpen) {
-      e.preventDefault(); handleSidebarToggle(); return;
+      e.preventDefault();
+      handleSidebarToggle();
+      return;
     }
   });
 
@@ -2371,9 +3268,28 @@ function maybeLoadMore() {
 /* ─────────────────────────────────────────────────────────────────────────
    State change helpers
    ───────────────────────────────────────────────────────────────────────── */
-function applyFilter(f) { state.filterStatus = f; state.extFilter = 'all'; resetRenderCount(); pruneSelection(); persistPrefs(); scheduleRender(); }
-function applySort(s)   { state.sortBy = s;        resetRenderCount(); persistPrefs(); scheduleRender(); }
-function applySearch(v) { state.searchQuery = v.trim(); resetRenderCount(); pruneSelection(); scheduleRender(); }
+function applyFilter(f) {
+  state.filterStatus = f;
+  state.extFilter = 'all';
+  resetRenderCount();
+  pruneSelection();
+  persistPrefs();
+  scheduleRender();
+}
+
+function applySort(s) {
+  state.sortBy = s;
+  resetRenderCount();
+  persistPrefs();
+  scheduleRender();
+}
+
+function applySearch(v) {
+  state.searchQuery = v.trim();
+  resetRenderCount();
+  pruneSelection();
+  scheduleRender();
+}
 
 function syncControls() {
   // Sync sort popover label + active state
@@ -2392,34 +3308,37 @@ function syncControls() {
  */
 function i18nDom() {
   const textMap = {
-    '.sidebar-logo span':                   'sidebar_title',
-    '[data-filter="all"] .tab-label':        'filter_all',
-    '[data-filter="complete"] .tab-label':   'filter_complete',
-    '[data-filter="in_progress"] .tab-label':'filter_in_progress',
-    '[data-filter="failed"] .tab-label':     'filter_failed',
-    '[data-filter="missing"] .tab-label':    'filter_missing',
-    '.stat-tile:nth-child(1) .stat-label':   'stat_visible',
-    '.stat-tile:nth-child(2) .stat-label':   'stat_selected',
-    '.stat-tile:nth-child(3) .stat-label':   'stat_active',
-    '.stat-tile:nth-child(4) .stat-label':   'stat_on_disk',
-    '#btn-open-tab':                         'btn_open_full_page',
-    '#btn-clear-all':                        'btn_clear_history',
-    '#btn-bulk-erase':                       'bulk_remove',
-    '#btn-load-more':                        'btn_load_more',
-    '#empty-message':                        'empty_title',
-    '.empty-sub':                            'empty_subtitle',
-    '#loading-state span':                   'loading',
-    '.sort-popover-header':                  'sort_by',
-    '.ext-popover-header':                   'file_type',
-    '#btn-apply-range':                      'date_apply_range',
-    '[data-date-opt="all"]':                 'date_to_date',
-    '[data-date-opt="today"]':               'date_today',
-    '[data-date-opt="yesterday"]':           'date_yesterday',
-    '.date-range-label[for="date-from"]':    'date_from',
-    '.date-range-label[for="date-to"]':      'date_to',
+    '.sidebar-logo span': 'sidebar_title',
+    '[data-filter="all"] .tab-label': 'filter_all',
+    '[data-filter="complete"] .tab-label': 'filter_complete',
+    '[data-filter="in_progress"] .tab-label': 'filter_in_progress',
+    '[data-filter="failed"] .tab-label': 'filter_failed',
+    '[data-filter="missing"] .tab-label': 'filter_missing',
+    '.stat-tile:nth-child(1) .stat-label': 'stat_visible',
+    '.stat-tile:nth-child(2) .stat-label': 'stat_selected',
+    '.stat-tile:nth-child(3) .stat-label': 'stat_active',
+    '.stat-tile:nth-child(4) .stat-label': 'stat_on_disk',
+    '#btn-open-tab': 'btn_open_full_page',
+    '#btn-clear-all': 'btn_clear_history',
+    '#btn-bulk-erase': 'bulk_remove',
+    '#btn-load-more': 'btn_load_more',
+    '#empty-message': 'empty_title',
+    '.empty-sub': 'empty_subtitle',
+    '#loading-state span': 'loading',
+    '.sort-popover-header': 'sort_by',
+    '.ext-popover-header': 'file_type',
+    '#btn-apply-range': 'date_apply_range',
+    '[data-date-opt="all"]': 'date_to_date',
+    '[data-date-opt="today"]': 'date_today',
+    '[data-date-opt="yesterday"]': 'date_yesterday',
+    '.date-range-label[for="date-from"]': 'date_from',
+    '.date-range-label[for="date-to"]': 'date_to',
   };
   const attrMap = {
-    '#search-input': { placeholder: 'search_placeholder', 'aria-label': 'search_placeholder' },
+    '#search-input': {
+      placeholder: 'search_placeholder',
+      'aria-label': 'search_placeholder'
+    },
   };
 
   for (const [sel, key] of Object.entries(textMap)) {
