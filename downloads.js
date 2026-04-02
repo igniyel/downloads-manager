@@ -2410,7 +2410,7 @@ async function bulkDelete() {
     body: diskItems.length ? 'Files will be permanently deleted from disk.' :
       'Items will be removed from history.',
     bodyEl: frag,
-    confirmLabel: `Delete (${diskItems.length})`,
+    confirmLabel: `Delete (${total})`,
     confirmCls: 'danger-btn',
     icon: '🗑️',
   });
@@ -2509,10 +2509,10 @@ async function bulkErase() {
   }));
 
   const ok = await showModal({
-    title: `Remove ${elig.length} from history?`,
+    title: `Remove ${elig.length} item${elig.length === 1 ? '' : 's'} from history?`,
     body: 'Files on disk are untouched.',
     bodyEl,
-    confirmLabel: `Remove (${elig.length - skip})`,
+    confirmLabel: `Remove (${elig.length})`,
     confirmCls: 'ghost-btn',
     icon: '📋',
   });
