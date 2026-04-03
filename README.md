@@ -23,6 +23,12 @@ It is designed to remain lightweight, with bundled assets and no external runtim
 
 ---
 
+<p align="center">
+  <img src="https://downloads-manager.shyps.fyi/preview.svg" alt="Downloads Manager — Auto and Dark themes" width="100%">
+</p>
+
+---
+
 ## Features
 
 ### Download management
